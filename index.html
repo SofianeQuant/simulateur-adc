@@ -395,14 +395,14 @@ const OBJECTIF_LABELS = { performance: "Performance", passif: "Revenus passifs",
 
 // Capital : tranches Tally → valeur milieu utilisée pour le calcul
 function capitalDepuisTranche(tranche) {
-  const map = {
-    'A': 500,    // Moins de 1 000 €
-    'B': 3000,   // 1 000 € – 5 000 €
-    'C': 10000,  // 5 000 € – 15 000 €
-    'D': 22500,  // 15 000 € – 30 000 €
-    'E': 50000   // Plus de 30 000 €
-  };
-  return map[tranche?.toUpperCase()] || 10000;
+  const t = (tranche || '').toLowerCase();
+  // Accepte lettre seule OU texte complet Tally
+  if (t === 'a' || t.includes('moins de 1')) return 500;
+  if (t === 'b' || (t.includes('1') && t.includes('5 000'))) return 3000;
+  if (t === 'c' || (t.includes('5 000') && t.includes('15 000'))) return 10000;
+  if (t === 'd' || t.includes('15 000')) return 22500;
+  if (t === 'e' || t.includes('30 000') || t.includes('plus de')) return 50000;
+  return 10000;
 }
 
 // Risque : valeurs Tally → clés internes
@@ -528,8 +528,14 @@ function initFromURL() {
 
     // Adapter le CTA selon la tranche de capital
     // Tally peut envoyer juste 'A' ou le texte complet 'A - Moins de 1 000 €'
-    const tranche = capitalParam ? capitalParam.toUpperCase() : '';
-    const estPetitCapital = tranche.startsWith('A') || tranche.startsWith('B');
+    // Tally envoie le texte complet ex: "Moins de 1 000 € — Je commence à construire mon épargne"
+    const capitalLower = capitalParam ? capitalParam.toLowerCase() : '';
+    const estPetitCapital = capitalLower.includes('moins de 1') || 
+                            capitalLower.includes('1 000') ||
+                            capitalLower.includes('1000') ||
+                            capitalLower.includes('5 000') ||
+                            capitalLower.includes('5000') ||
+                            capitalLower === 'a' || capitalLower === 'b';
     if (estPetitCapital) {
       const btn = document.getElementById('cta-calendly');
       if (btn) {
