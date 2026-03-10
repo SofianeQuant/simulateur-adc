@@ -428,8 +428,7 @@ const RISQUE_RATES = {
 function parseParams() {
   const p = new URLSearchParams(window.location.search);
 
-  // Debug: affiche TOUJOURS tous les params + profil détecté (band en bas de page)
-  window._debugParams = p; // accessible depuis console
+
 
   // Helper: cherche un param parmi plusieurs noms alternatifs
   function get(...keys) {
