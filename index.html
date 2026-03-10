@@ -537,9 +537,9 @@ function ctaConfig(capital) {
       url:        EBOOK_URL,
       btnLabel:   '📥 Télécharger le Guide Gratuit →',
       midLabel:   '📥 Télécharger le guide gratuitement →',
-      h3:         'Un cadeau pour toi 🎁',
-      desc:       'Alexandre t\'a préparé le <strong>Guide Portefeuille Type 2026</strong> : comment faire fructifier ton argent intelligemment dès maintenant. 100% offert.',
-      badges:     '<span style="color:var(--green-light);font-weight:700;">✅ 100% gratuit, aucun engagement</span><span style="color:var(--text3);">📖 Guide PDF · Téléchargement immédiat</span>',
+      h3:         '🎁 Franchis le cap des 5 000 €',
+      desc:       'Pour bénéficier d\'un accompagnement personnalisé, il faut d\'abord atteindre <strong>5 000 € d\'épargne</strong>. Le <strong>Guide Portefeuille Type 2026</strong> d\'Alexandre te donne les clés pour y arriver. <strong>100% offert.</strong>',
+      badges:     '<span style="color:var(--green-light);font-weight:700;">✅ 100% gratuit · Aucun engagement</span><span style="color:var(--text3);">📖 Guide PDF · Téléchargement immédiat</span>',
     };
   }
   return {
@@ -716,8 +716,8 @@ function render() {
     <!-- MID CTA -->
     <div style="background:linear-gradient(135deg,rgba(200,150,62,0.08),rgba(200,150,62,0.04));border:1px solid rgba(200,150,62,0.25);border-radius:12px;padding:20px 24px;margin:24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
       <div>
-        <p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">💡 Ces chiffres vous surprennent ?</p>
-        <p style="font-size:12px;color:var(--text2);">Un audit patrimonial gratuit permet de valider et personnaliser ces projections avec un expert.</p>
+        <p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">${capital < 5000 ? '🎯 Ton prochain cap : 5 000 € d\'épargne' : '💡 Ces chiffres vous surprennent ?'}</p>
+        <p style="font-size:12px;color:var(--text2);">${capital < 5000 ? 'Le guide gratuit d\'Alexandre te montre comment y arriver étape par étape.' : 'Un audit patrimonial gratuit permet de valider et personnaliser ces projections avec un expert.'}</p>
       </div>
       <a href="${ctaConfig(capital).url}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:11px 22px;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .2s;box-shadow:0 3px 16px rgba(200,150,62,0.3);">${ctaConfig(capital).midLabel}</a>
     </div>
@@ -1022,12 +1022,9 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
 }
 
 // ─── MODIFIER SIMULATION ─────────────────────────────────────────────────────
-function toggleModifier() {
-  let panel = document.getElementById('modifier-panel');
-  if (panel) { panel.remove(); document.getElementById('btn-modifier').textContent = '✏️ Modifier ma simulation'; return; }
-  document.getElementById('btn-modifier').textContent = '✕ Fermer';
+function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
-  const profil = PROFILS[personnage] || PROFILS['cdi'];
+  document.getElementById('btn-modifier').textContent = '✕ Fermer';
   const panelHtml = `<div id="modifier-panel" style="background:var(--bg2);border:1px solid rgba(200,150,62,0.35);border-radius:14px;padding:24px 28px;margin:16px 0 0;position:relative;z-index:10;">
     <h4 style="font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px;">✏️ Modifier la simulation <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">Les modifications sont appliquées en temps réel</span></h4>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
@@ -1066,6 +1063,16 @@ function toggleModifier() {
   app.insertAdjacentHTML('beforebegin', panelHtml);
 }
 
+function toggleModifier() {
+  const panel = document.getElementById('modifier-panel');
+  if (panel) {
+    panel.remove();
+    document.getElementById('btn-modifier').textContent = '✏️ Modifier ma simulation';
+    return;
+  }
+  _showModifierPanel();
+}
+
 function applyModif(force) {
   const p = document.getElementById('mod-prenom');
   const c = document.getElementById('mod-capital');
@@ -1085,9 +1092,12 @@ function applyModif(force) {
   Object.values(charts).forEach(ch => { try { ch.destroy(); } catch(e){} });
   charts = {};
   render();
-  // Re-inject panel after render
+  // Re-inject panel after render (panel was wiped by render)
   setTimeout(() => {
-    if (!document.getElementById('modifier-panel')) toggleModifier();
+    if (!document.getElementById('modifier-panel')) {
+      // Directly inject without toggling (avoid toggle removing it)
+      _showModifierPanel();
+    }
   }, 80);
 }
 
