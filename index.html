@@ -1155,18 +1155,6 @@ window.addEventListener('DOMContentLoaded', () => {
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
   state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne };
   render();
-
-  // ── Debug panel (affiché si params URL présents) ──
-  const p = window._debugParams;
-  if (p && [...p.entries()].length > 0) {
-    const allParams = [...p.entries()].map(([k,v]) => `<span style="color:#f0c040">${k}</span>=<span style="color:#7fdfff">${v}</span>`).join('<br>');
-    const dbg = document.createElement('div');
-    dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d0d1a;border-top:2px solid #f0c040;padding:12px 16px;font-size:11px;font-family:monospace;color:#aaa;z-index:9999;max-height:40vh;overflow-y:auto;';
-    dbg.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="color:#f0c040">🔍 DEBUG — Params Tally reçus</b><button onclick="this.parentElement.parentElement.remove()" style="background:#333;border:none;color:#fff;padding:2px 8px;border-radius:4px;cursor:pointer;">✕</button></div>
-<b style="color:#aaa">Profil détecté :</b> <span style="color:#4ade80;font-weight:bold">${parsed.personnage}</span> · Capital : <span style="color:#4ade80">${parsed.capital} €</span><br><br>
-<b style="color:#aaa">Tous les paramètres :</b><br>${allParams || '<i>aucun</i>'}`;
-    document.body.appendChild(dbg);
-  }
 });
 </script>
 </body>
