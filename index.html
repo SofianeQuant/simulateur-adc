@@ -428,6 +428,9 @@ const RISQUE_RATES = {
 function parseParams() {
   const p = new URLSearchParams(window.location.search);
 
+  // Debug: affiche TOUJOURS tous les params + profil détecté (band en bas de page)
+  window._debugParams = p; // accessible depuis console
+
   // Helper: cherche un param parmi plusieurs noms alternatifs
   function get(...keys) {
     for (const k of keys) { const v = p.get(k); if (v && v.trim()) return v.trim(); }
@@ -439,7 +442,7 @@ function parseParams() {
     capital:    get('capital','Capital','capital_disponible','epargne_disponible','montant','savings','patrimoine') || 'c',
     risque:     get('risque','Risque','tolerance_risque','profil_risque','tolerance','risk') || 'moderee',
     objectif:   get('objectif','Objectif','objectif_principal','goal','but') || 'performance',
-    personnage: get('personnage','Personnage','profil','Profil','situation','statut','profession','metier') || 'cdi',
+    personnage: get('personnage','Personnage','profil','Profil','situation','statut','profession','metier','Metier','Profession','Situation','Statut','type','Type','categorie','Categorie','qui','Qui','je_suis','activite','Activite') || '__scan__',
     produits:   get('produits','Produits') || '',
   };
 
@@ -487,20 +490,41 @@ function parseParams() {
     : 'performance';
 
   // ── Personnage ──
-  const persLow = raw.personnage.toLowerCase();
-  const personnage = persLow.includes('cdd') || persLow.includes('interim') || persLow.includes('intérim')
-    ? 'cdd'
-    : persLow.includes('independant') || persLow.includes('indépendant') || persLow.includes('freelance') || persLow.includes('auto') || persLow.includes('liberal') || persLow.includes('libéral')
-    ? 'independant'
-    : persLow.includes('chef') || persLow.includes('dirigeant') || persLow.includes('gérant') || persLow.includes('gerant') || persLow.includes('patron')
-    ? 'chef'
-    : persLow.includes('fonct') || persLow.includes('agent') || persLow.includes('function')
-    ? 'fonctionnaire'
-    : persLow.includes('etudiant') || persLow.includes('étudiant') || persLow.includes('student')
-    ? 'etudiant'
-    : persLow.includes('reconv') || persLow.includes('transition')
-    ? 'reconversion'
-    : 'cdi';
+  // Si aucun champ connu trouvé, scanne tous les paramètres URL pour détecter un profil
+  let persRaw = raw.personnage;
+  if (persRaw === '__scan__') {
+    const PROFIL_KEYWORDS = ['etudiant','étudiant','student','cdd','interim','independant','freelance','auto','chef','dirigeant','fonctionnaire','reconversion','cdi','salarié','salarie'];
+    const PROFIL_LETTERS = ['a','b','c','d','e','f','g'];
+    for (const [, val] of p.entries()) {
+      const vl = val.toLowerCase().trim();
+      if (PROFIL_LETTERS.includes(vl) || PROFIL_KEYWORDS.some(k => vl.includes(k))) {
+        persRaw = val; break;
+      }
+    }
+    if (persRaw === '__scan__') persRaw = 'cdi'; // vrai fallback
+  }
+  const persLow = persRaw.toLowerCase().trim();
+
+  // 1. Clé directe (ex: 'etudiant', 'cdi' envoyé par le panel de modification)
+  let personnage = PROFILS[persLow] ? persLow : null;
+
+  // 2. Lettre Tally (A/B/C...) — mappées selon la question Profil/Situation
+  if (!personnage) {
+    // A=CDI  B=CDD  C=Indépendant  D=Chef  E=Fonctionnaire  F=Étudiant  G=Reconversion
+    const LETTER = { 'a':'cdi', 'b':'cdd', 'c':'independant', 'd':'chef', 'e':'fonctionnaire', 'f':'etudiant', 'g':'reconversion' };
+    if (LETTER[persLow]) personnage = LETTER[persLow];
+  }
+
+  // 3. Mots-clés dans le label complet
+  if (!personnage) {
+    personnage = persLow.includes('cdd') || persLow.includes('interim') || persLow.includes('intérim') ? 'cdd'
+      : persLow.includes('independant') || persLow.includes('indépendant') || persLow.includes('freelance') || persLow.includes('auto') || persLow.includes('liberal') || persLow.includes('libéral') ? 'independant'
+      : persLow.includes('chef') || persLow.includes('dirigeant') || persLow.includes('gérant') || persLow.includes('gerant') || persLow.includes('patron') ? 'chef'
+      : persLow.includes('fonct') || persLow.includes('agent') || persLow.includes('function') ? 'fonctionnaire'
+      : persLow.includes('etudiant') || persLow.includes('étudiant') || persLow.includes('student') || persLow.includes('etude') || persLow.includes('étude') ? 'etudiant'
+      : persLow.includes('reconv') || persLow.includes('transition') ? 'reconversion'
+      : 'cdi';
+  }
 
   return { prenom: raw.prenom, capital, risque, objectif, personnage, produits: raw.produits };
 }
@@ -613,7 +637,7 @@ function render() {
       </div>
       <div class="adjust-row">
         <span class="adjust-label">Épargne mensuelle</span>
-        <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="3000" step="50" value="${epargne}" oninput="updateEpargne(this)">
+        <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
         <span class="adjust-val" id="val-epargne">${fmt(epargne)}</span>
       </div>
     </div>
@@ -1131,6 +1155,18 @@ window.addEventListener('DOMContentLoaded', () => {
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
   state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne };
   render();
+
+  // ── Debug panel (affiché si params URL présents) ──
+  const p = window._debugParams;
+  if (p && [...p.entries()].length > 0) {
+    const allParams = [...p.entries()].map(([k,v]) => `<span style="color:#f0c040">${k}</span>=<span style="color:#7fdfff">${v}</span>`).join('<br>');
+    const dbg = document.createElement('div');
+    dbg.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:#0d0d1a;border-top:2px solid #f0c040;padding:12px 16px;font-size:11px;font-family:monospace;color:#aaa;z-index:9999;max-height:40vh;overflow-y:auto;';
+    dbg.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;"><b style="color:#f0c040">🔍 DEBUG — Params Tally reçus</b><button onclick="this.parentElement.parentElement.remove()" style="background:#333;border:none;color:#fff;padding:2px 8px;border-radius:4px;cursor:pointer;">✕</button></div>
+<b style="color:#aaa">Profil détecté :</b> <span style="color:#4ade80;font-weight:bold">${parsed.personnage}</span> · Capital : <span style="color:#4ade80">${parsed.capital} €</span><br><br>
+<b style="color:#aaa">Tous les paramètres :</b><br>${allParams || '<i>aucun</i>'}`;
+    document.body.appendChild(dbg);
+  }
 });
 </script>
 </body>
