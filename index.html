@@ -526,6 +526,21 @@ function initFromURL() {
       if (h1) h1.innerHTML = `${prenomParam}, voici <span>ta simulation</span>`;
     }
 
+    // Adapter le CTA selon la tranche de capital
+    const tranche = capitalParam ? capitalParam.toUpperCase() : '';
+    if (tranche === 'A' || tranche === 'B') {
+      const btn = document.getElementById('cta-calendly');
+      if (btn) {
+        btn.href = "https://drive.google.com/file/d/1uhUf_NzdhNdwtrXVp1emWcVmPvOCJguU/view";
+        btn.target = "_blank";
+        btn.textContent = "\u{1F4D8} T\u00E9l\u00E9charger mon guide gratuit \u00B7 Type 2026 \u2192";
+      }
+      const urgence = document.querySelector('.cta-urgence');
+      if (urgence) urgence.innerHTML = "<span>\u2705 100% gratuit</span> \u00B7 Acc\u00E8s imm\u00E9diat";
+      const ctaText = document.querySelector('.cta-text');
+      if (ctaText) ctaText.innerHTML = "Ce guide t\'explique comment faire fructifier ton argent intelligemment d\u00E8s maintenant \u2014 m\u00EAme avec un petit capital. <strong>Offert par ADC Patrimoine.</strong>";
+    }
+
     // Lancer le calcul automatiquement
     calculate(capital, risque, horizonYears, objectif);
     return true; // mode Tally actif
