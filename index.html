@@ -528,14 +528,22 @@ function initFromURL() {
 
     // Adapter le CTA selon la tranche de capital
     // Tally peut envoyer juste 'A' ou le texte complet 'A - Moins de 1 000 €'
-    // Tally envoie le texte complet ex: "Moins de 1 000 € — Je commence à construire mon épargne"
-    const capitalLower = capitalParam ? capitalParam.toLowerCase() : '';
-    const estPetitCapital = capitalLower.includes('moins de 1') || 
+    // Détection petit capital
+    // Tally peut envoyer : "A", "B", ou le texte complet
+    // On utilise aussi ?ebook=1 passé manuellement depuis Tally si besoin
+    const capitalLower = decodeURIComponent(capitalParam || '').toLowerCase();
+    const ebookForce = params.get('ebook') === '1';
+    const estPetitCapital = ebookForce ||
+                            capitalLower === 'a' || 
+                            capitalLower === 'b' ||
+                            /^[ab][^a-z]/i.test(capitalParam || '') ||
+                            capitalLower.includes('moins') ||
+                            capitalLower.includes('commence') ||
+                            capitalLower.includes('petite') ||
                             capitalLower.includes('1 000') ||
-                            capitalLower.includes('1000') ||
-                            capitalLower.includes('5 000') ||
-                            capitalLower.includes('5000') ||
-                            capitalLower === 'a' || capitalLower === 'b';
+                            capitalLower.includes('1 000') ||
+                            capitalLower.includes('optimiser');
+    console.log('[ADC] capital:', capitalParam, '| ebook:', estPetitCapital);
     if (estPetitCapital) {
       const btn = document.getElementById('cta-calendly');
       if (btn) {
