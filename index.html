@@ -527,8 +527,10 @@ function initFromURL() {
     }
 
     // Adapter le CTA selon la tranche de capital
+    // Tally peut envoyer juste 'A' ou le texte complet 'A - Moins de 1 000 €'
     const tranche = capitalParam ? capitalParam.toUpperCase() : '';
-    if (tranche === 'A' || tranche === 'B') {
+    const estPetitCapital = tranche.startsWith('A') || tranche.startsWith('B');
+    if (estPetitCapital) {
       const btn = document.getElementById('cta-calendly');
       if (btn) {
         btn.href = "https://drive.google.com/file/d/1uhUf_NzdhNdwtrXVp1emWcVmPvOCJguU/view";
@@ -554,10 +556,7 @@ window.addEventListener('DOMContentLoaded', () => {
   updateSlider(document.getElementById('capital'));
   const tallyMode = initFromURL();
   // Si mode Tally, cacher le bouton "Modifier ma simulation" car Tally gère la navigation
-  if (tallyMode) {
-    const recalcBtn = document.querySelector('.recalc-btn');
-    if (recalcBtn) recalcBtn.style.display = 'none';
-  }
+  // Bouton modifier toujours visible
 });
 </script>
 </body>
