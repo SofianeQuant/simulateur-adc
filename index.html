@@ -2,7 +2,7 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Analyse Patrimoniale — ADC Patrimoine</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,900;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
@@ -25,13 +25,15 @@
   --blue: #4A8FE8;
 }
 * { margin:0; padding:0; box-sizing:border-box; }
-html { scroll-behavior: smooth; }
+html { scroll-behavior: smooth; overflow-x: clip; }
 body {
   background: var(--bg);
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   min-height: 100vh;
-  overflow-x: hidden;
+  overflow-x: clip;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 /* BACKGROUND FX */
@@ -47,7 +49,8 @@ body {
 }
 
 /* LAYOUT */
-.wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 24px 80px; }
+*, *::before, *::after { box-sizing: border-box; }
+.wrap { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 0 16px 80px; width: 100%; }
 
 /* LOGO */
 .logo-lockup {
@@ -141,12 +144,16 @@ header {
 
 /* SECTION TITLES */
 .section-title {
-  display: flex; align-items: center; gap: 12px;
+  display: flex; align-items: flex-start; gap: 10px;
   margin: 32px 0 16px;
 }
 .section-title h3 {
-  font-size: 13px; font-weight: 700; letter-spacing: .1em;
-  color: var(--gold); text-transform: uppercase; white-space: nowrap;
+  font-size: 13px; font-weight: 700; letter-spacing: .08em;
+  color: var(--gold); text-transform: uppercase;
+  white-space: normal; line-height: 1.4; min-width: 0; flex: 1;
+}
+@media (max-width: 600px) {
+  .section-title h3 { font-size: 11px; letter-spacing: .05em; }
 }
 .section-num {
   width: 26px; height: 26px; border-radius: 50%;
@@ -176,20 +183,36 @@ header {
   padding: 2px 9px; border-radius: 10px; border: 1px solid var(--border);
   letter-spacing: .04em; text-transform: none;
 }
-.adjust-row { display: flex; align-items: center; gap: 16px; margin-bottom: 14px; flex-wrap: wrap; }
-.adjust-label { font-size: 12px; font-weight: 600; color: var(--text); min-width: 140px; }
+.adjust-row { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+.adjust-label { font-size: 12px; font-weight: 600; color: var(--text2); letter-spacing: .04em; text-transform: uppercase; }
+.adjust-slider-wrap { display: flex; align-items: center; gap: 12px; width: 100%; }
 .adjust-slider {
-  flex: 1; min-width: 120px; -webkit-appearance: none; height: 4px; border-radius: 2px; outline: none; cursor: pointer;
-  background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val, 50%), var(--border) var(--val, 50%), var(--border) 100%);
+  flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px; outline: none; cursor: pointer;
+  background: linear-gradient(to right, var(--gold) 0%, var(--gold) var(--val, 20%), var(--border) var(--val, 20%), var(--border) 100%);
+  touch-action: manipulation; min-width: 0;
 }
 .adjust-slider::-webkit-slider-thumb {
-  -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  -webkit-appearance: none; width: 24px; height: 24px; border-radius: 50%;
   background: var(--gold-light); border: 3px solid var(--bg); cursor: pointer;
-  box-shadow: 0 0 10px rgba(240,192,96,0.4);
-  transition: transform .15s, box-shadow .15s;
+  box-shadow: 0 0 12px rgba(240,192,96,0.5);
+  transition: transform .1s, box-shadow .1s;
 }
-.adjust-slider::-webkit-slider-thumb:hover { transform: scale(1.2); box-shadow: 0 0 18px rgba(240,192,96,0.6); }
-.adjust-val { font-size: 15px; font-weight: 700; color: var(--gold-light); min-width: 82px; text-align: right; font-family: 'DM Sans', sans-serif; }
+.adjust-slider::-webkit-slider-thumb:hover { transform: scale(1.15); box-shadow: 0 0 18px rgba(240,192,96,0.7); }
+.adjust-slider::-moz-range-thumb {
+  width: 24px; height: 24px; border-radius: 50%;
+  background: var(--gold-light); border: 3px solid var(--bg); cursor: pointer;
+  box-shadow: 0 0 12px rgba(240,192,96,0.5);
+}
+.adjust-input {
+  flex-shrink: 0; width: 86px; background: var(--bg3); border: 1.5px solid var(--border); border-radius: 8px;
+  padding: 7px 8px; color: var(--gold-light); font-family: 'DM Sans', sans-serif;
+  font-size: 15px; font-weight: 700; outline: none; text-align: center;
+  transition: border-color .2s;
+  -moz-appearance: textfield;
+}
+.adjust-input::-webkit-outer-spin-button,
+.adjust-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.adjust-input:focus { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(200,150,62,0.15); }
 
 /* CARDS GRID */
 .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -231,18 +254,18 @@ header {
 /* RANGE BAR */
 .range-bar {
   background: var(--bg3); border: 1px solid var(--border);
-  border-radius: 8px; padding: 14px 16px; margin-bottom: 16px;
+  border-radius: 8px; padding: 16px 18px; margin-bottom: 16px;
 }
-.range-title { font-size: 11px; font-weight: 600; color: var(--text2); margin-bottom: 10px; text-transform: uppercase; letter-spacing: .06em; }
-.range-track { height: 5px; background: var(--border); border-radius: 3px; position: relative; margin-bottom: 8px; }
+.range-title { font-size: 11px; font-weight: 700; color: var(--text2); margin-bottom: 14px; text-transform: uppercase; letter-spacing: .08em; }
+.range-track { height: 6px; background: var(--border); border-radius: 3px; position: relative; margin-bottom: 14px; }
 .range-fill {
   position: absolute; left: 0; top: 0; height: 100%; border-radius: 3px;
   background: linear-gradient(90deg, var(--gold-dark), var(--gold-light));
   transition: width .8s cubic-bezier(.4,0,.2,1);
 }
-.range-labels { display: flex; justify-content: space-between; font-size: 11px; }
-.range-min { color: var(--text2); }
-.range-max { color: var(--gold-light); font-weight: 700; }
+.range-labels { display: flex; justify-content: space-between; align-items: flex-start; font-size: 12px; gap: 8px; }
+.range-min { color: var(--text2); line-height: 1.4; }
+.range-max { color: var(--gold-light); font-weight: 700; text-align: right; line-height: 1.4; }
 
 /* INSIGHTS */
 .insights { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
@@ -340,6 +363,28 @@ header {
 @media (max-width: 540px) {
   .cta-inner { flex-direction: column; text-align: center; }
   .cta-content h3, .cta-content p, .cta-content .cta-urgence { text-align: center; }
+}
+
+/* MOBILE OVERFLOW FIX */
+@media (max-width: 600px) {
+  .wrap { padding: 0 12px 80px; }
+  .candidat-banner { padding: 16px; }
+  .score-box { min-width: 90px; padding: 12px 14px; }
+  .score-val { font-size: 28px; }
+  .candidat-info h2 { font-size: 17px; }
+  .chart-box { padding: 14px; }
+  header { padding: 20px 0 16px; }
+  .header-right { gap: 8px; }
+  .print-btn { font-size: 11px; padding: 7px 12px; }
+  .card-val { font-size: 22px; }
+  /* Forcer toutes les cartes en colonne */
+  .cards-grid { grid-template-columns: 1fr !important; }
+  .reco-grid { grid-template-columns: 1fr !important; }
+  /* Fix budget chart flex */
+  .chart-box [style*="display:flex"] { flex-direction: column; }
+  /* Fix adjust section ne dépasse jamais */
+  .adjust-section { overflow: hidden; }
+  .adjust-slider-wrap { max-width: 100%; }
 }
 
 /* PRINT */
@@ -540,10 +585,46 @@ function calcWealth(capital, epargne, rate, years) {
 
 function scorePatrimoine(capital, revenu, epargne, tauxEpargne) {
   let score = 0;
-  if (tauxEpargne > 0.2) score += 30; else if (tauxEpargne > 0.1) score += 20; else if (tauxEpargne > 0.05) score += 10;
-  if (capital > revenu * 6) score += 25; else if (capital > revenu * 3) score += 15; else if (capital > revenu) score += 8;
-  if (epargne > 500) score += 20; else if (epargne > 200) score += 12; else score += 4;
-  score += Math.min(25, Math.floor(capital / 2000));
+
+  // 1. TAUX D'ÉPARGNE — 20 pts max
+  // Récompense la discipline, pas le montant absolu
+  if (tauxEpargne >= 0.25)     score += 20;
+  else if (tauxEpargne >= 0.15) score += 15;
+  else if (tauxEpargne >= 0.10) score += 10;
+  else if (tauxEpargne >= 0.05) score += 5;
+
+  // 2. MATELAS DE SÉCURITÉ — 20 pts max
+  // Capital / dépenses mensuelles estimées (revenus - épargne)
+  const depenses = Math.max(1, revenu - epargne);
+  const moisCouverture = capital / depenses;
+  if (moisCouverture >= 6)      score += 20;
+  else if (moisCouverture >= 3) score += 14;
+  else if (moisCouverture >= 1) score += 7;
+
+  // 3. CAPITAL INVESTI — 20 pts max
+  // Progressif, accessible même avec peu
+  if (capital >= 50000)      score += 20;
+  else if (capital >= 20000) score += 16;
+  else if (capital >= 10000) score += 12;
+  else if (capital >= 5000)  score += 8;
+  else if (capital >= 1000)  score += 4;
+
+  // 4. CAPACITÉ D'INVESTISSEMENT MENSUELLE — 20 pts max
+  // Montant absolu épargné chaque mois
+  if (epargne >= 800)      score += 20;
+  else if (epargne >= 400) score += 15;
+  else if (epargne >= 200) score += 10;
+  else if (epargne >= 50)  score += 5;
+
+  // 5. RATIO CAPITAL / REVENUS ANNUELS — 20 pts max
+  // Mesure si le patrimoine est à la hauteur du niveau de vie
+  const revenusAnnuels = revenu * 12;
+  const ratioCapital = capital / revenusAnnuels;
+  if (ratioCapital >= 2)      score += 20;
+  else if (ratioCapital >= 1) score += 15;
+  else if (ratioCapital >= 0.5) score += 9;
+  else if (ratioCapital >= 0.25) score += 4;
+
   return Math.min(100, score);
 }
 
@@ -631,13 +712,17 @@ function render() {
       <h4>⚙️ Ajuster les données <span class="adjust-badge">Optionnel — affiner lors de l'audit</span></h4>
       <div class="adjust-row">
         <span class="adjust-label">Revenus nets / mois</span>
-        <input type="range" class="adjust-slider" id="sl-revenu" min="500" max="10000" step="100" value="${revenu}" oninput="updateRevenu(this)">
-        <span class="adjust-val" id="val-revenu">${fmt(revenu)}</span>
+        <div class="adjust-slider-wrap">
+          <input type="range" class="adjust-slider" id="sl-revenu" min="500" max="10000" step="100" value="${revenu}" oninput="updateRevenu(this)">
+          <input type="number" class="adjust-input" id="inp-revenu" min="500" max="10000" step="100" value="${revenu}" oninput="syncRevenuSlider(this)" onblur="applyRevenuInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
       </div>
       <div class="adjust-row">
         <span class="adjust-label">Épargne mensuelle</span>
-        <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
-        <span class="adjust-val" id="val-epargne">${fmt(epargne)}</span>
+        <div class="adjust-slider-wrap">
+          <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
+          <input type="number" class="adjust-input" id="inp-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="syncEpargneSlider(this)" onblur="applyEpargneInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
       </div>
     </div>
 
@@ -674,7 +759,7 @@ function render() {
     <div class="chart-box" style="margin-top:12px">
       <h4>Répartition budget mensuel</h4>
       <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <div style="flex:1;min-width:200px;padding-top:8px">
+        <div style="flex:1;min-width:0;padding-top:8px">
           <div class="budget-bar-wrap">
             <div class="budget-bar-header"><span class="budget-bar-label">Dépenses courantes</span><span class="budget-bar-val">${fmt(depenses)}</span></div>
             <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(depenses/revenu*100).toFixed(0)}%;background:var(--blue)"></div></div>
@@ -684,7 +769,7 @@ function render() {
             <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(tauxEpargne*100).toFixed(0)}%;background:var(--green-light)"></div></div>
           </div>
         </div>
-        <div class="chart-wrap" style="flex:1;min-width:200px;height:160px">
+        <div class="chart-wrap" style="flex:1;min-width:0;height:160px">
           <canvas id="chart-budget"></canvas>
         </div>
       </div>
@@ -875,19 +960,77 @@ function updateSliderTrack(el) {
   const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
   el.style.setProperty('--val', pct + '%');
 }
+/* ── INPUT HANDLERS ─────────────────────────────────────────────────── */
+// Slider → update track + input field + rerender immédiat
 function updateRevenu(el) {
   updateSliderTrack(el);
   state.revenu = parseInt(el.value);
   if (state.epargne > state.revenu * 0.7) state.epargne = Math.floor(state.revenu * 0.3);
-  document.getElementById('val-revenu').textContent = fmt(state.revenu);
+  const inp = document.getElementById('inp-revenu');
+  if (inp) inp.value = state.revenu;
+  const slE = document.getElementById('sl-epargne');
+  if (slE) { slE.value = state.epargne; updateSliderTrack(slE); }
+  const inpE = document.getElementById('inp-epargne');
+  if (inpE) inpE.value = state.epargne;
   rerender();
 }
 function updateEpargne(el) {
   updateSliderTrack(el);
   state.epargne = parseInt(el.value);
-  document.getElementById('val-epargne').textContent = fmt(state.epargne);
+  const inp = document.getElementById('inp-epargne');
+  if (inp) inp.value = state.epargne;
   rerender();
 }
+
+// Input → sync slider visuellement en temps réel (sans rerender)
+function syncRevenuSlider(el) {
+  let v = parseInt(el.value);
+  if (!isNaN(v)) {
+    if (v > 10000) v = 10000;
+    const sl = document.getElementById('sl-revenu');
+    if (sl) { sl.value = v; updateSliderTrack(sl); }
+  }
+}
+function syncEpargneSlider(el) {
+  let v = parseInt(el.value);
+  if (!isNaN(v)) {
+    if (v > 8000) v = 8000;
+    const sl = document.getElementById('sl-epargne');
+    if (sl) { sl.value = v; updateSliderTrack(sl); }
+  }
+}
+
+// Input blur → clamp + rerender
+function applyRevenuInput(el) {
+  let v = parseInt(el.value) || 500;
+  if (v < 500) v = 500;
+  if (v > 10000) v = 10000;
+  el.value = v;
+  state.revenu = v;
+  if (state.epargne > state.revenu * 0.7) state.epargne = Math.floor(state.revenu * 0.3);
+  const sl = document.getElementById('sl-revenu');
+  if (sl) { sl.value = v; updateSliderTrack(sl); }
+  const slE = document.getElementById('sl-epargne');
+  if (slE) { slE.value = state.epargne; updateSliderTrack(slE); }
+  const inpE = document.getElementById('inp-epargne');
+  if (inpE) inpE.value = state.epargne;
+  rerender();
+}
+function applyEpargneInput(el) {
+  let v = parseInt(el.value) || 0;
+  if (v < 0) v = 0;
+  if (v > 8000) v = 8000;
+  el.value = v;
+  state.epargne = v;
+  const sl = document.getElementById('sl-epargne');
+  if (sl) { sl.value = v; updateSliderTrack(sl); }
+  rerender();
+}
+// Compat aliases (plus utilisés mais gardés par sécurité)
+function updateRevenuInput(el) { applyRevenuInput(el); }
+function clampRevenuInput(el) { applyRevenuInput(el); }
+function updateEpargneInput(el) { applyEpargneInput(el); }
+function clampEpargneInput(el) { applyEpargneInput(el); }
 function rerender() {
   Object.values(charts).forEach(c => { try { c.destroy(); } catch(e){} });
   charts = {};
@@ -1048,9 +1191,9 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
 function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
   document.getElementById('btn-modifier').textContent = '✕ Fermer';
-  const panelHtml = `<div id="modifier-panel" style="background:var(--bg2);border:1px solid rgba(200,150,62,0.35);border-radius:14px;padding:24px 28px;margin:16px 0 0;position:relative;z-index:10;">
+  const panelHtml = `<div id="modifier-panel" style="background:var(--bg2);border:1px solid rgba(200,150,62,0.35);border-radius:14px;padding:16px;margin:16px 0 0;position:relative;z-index:10;">
     <h4 style="font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px;">✏️ Modifier la simulation <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">Les modifications sont appliquées en temps réel</span></h4>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Prénom</label>
         <input id="mod-prenom" value="${prenom}" oninput="applyModif()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;">
