@@ -245,9 +245,9 @@ header {
 
 /* BUDGET BARS */
 .budget-bar-wrap { margin-bottom: 14px; }
-.budget-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; }
-.budget-bar-label { font-size: 12px; font-weight: 500; color: var(--text2); }
-.budget-bar-val { font-size: 13px; font-weight: 700; color: var(--text); }
+.budget-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; flex-wrap: wrap; gap: 4px; }
+.budget-bar-label { font-size: 12px; font-weight: 500; color: var(--text2); flex-shrink: 0; }
+.budget-bar-val { font-size: 13px; font-weight: 700; color: var(--text); flex-shrink: 0; white-space: nowrap; }
 .budget-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .budget-bar-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
 
@@ -415,7 +415,6 @@ header {
 
     <div class="header-right">
       <div class="header-badge"><span class="dot"></span> Analyse en cours</div>
-      <button class="print-btn" onclick="exportPDF()">📄 Exporter PDF</button>
       <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;">✏️ Modifier ma simulation</button>
     </div>
   </header>
@@ -667,18 +666,50 @@ function render() {
   const depenses = revenu - epargne;
   const tauxEpargne = epargne / revenu;
 
+  // ── Taux épargne mensuelle selon profil de risque ──
+  const tauxEpargneInvest = risque === 'elevee' ? 0.08 : 0.02;
+  const tauxEpargneMensuelInvest = tauxEpargneInvest / 12;
+
+  // ── Flux 1 : Capital de départ (taux plein selon profil) ──
   const gainMid = capital * (Math.pow(1 + rates.mid, years) - 1);
   const gainMin = capital * (Math.pow(1 + rates.min, years) - 1);
   const gainMax = capital * (Math.pow(1 + rates.max, years) - 1);
-  const finalMid = capital + gainMid;
-  const finalMin = capital + gainMin;
-  const finalMax = capital + gainMax;
+  const finalCapitalMid = capital + gainMid;
+  const finalCapitalMin = capital + gainMin;
+  const finalCapitalMax = capital + gainMax;
   const annualMid = gainMid / years;
+  // finalMid gardé pour compatibilité effet levier
+  const finalMid = finalCapitalMid;
+  const finalMin = finalCapitalMin;
+  const finalMax = finalCapitalMax;
 
-  const wealthData = calcWealth(capital, epargne, rates.mid, years);
-  const wealthMin  = calcWealth(capital, 0, rates.min, years);
-  const wealthMax  = calcWealth(capital, epargne, rates.max, years);
-  const finalWithEpargne = wealthData[years];
+  // ── Flux 2 : Épargne mensuelle (taux prudent/équilibré=2%, dynamique=8%) ──
+  const nMoisTotal = years * 12;
+  const finalEpargne = tauxEpargneMensuelInvest === 0
+    ? epargne * nMoisTotal
+    : epargne * (Math.pow(1 + tauxEpargneMensuelInvest, nMoisTotal) - 1) / tauxEpargneMensuelInvest;
+  const gainEpargne = finalEpargne - epargne * nMoisTotal;
+
+  // ── Total combiné ──
+  const finalWithEpargne = finalCapitalMid + finalEpargne;
+
+  // ── Courbe graphique (calcWealth reste avec rate unique pour la lisibilité visuelle) ──
+  function calcWealthDual(capital, epargne, rateCapital, rateEpargne, years) {
+    const data = [];
+    let valCapital = capital;
+    let valEpargne = 0;
+    const rateM = rateEpargne / 12;
+    for (let y = 0; y <= years; y++) {
+      data.push(Math.round(valCapital + valEpargne));
+      valCapital = valCapital * (1 + rateCapital);
+      valEpargne = (valEpargne + epargne * 12) * (1 + rateEpargne);
+    }
+    return data;
+  }
+  const wealthData = calcWealthDual(capital, epargne, rates.mid, tauxEpargneInvest, years);
+  const wealthMin  = calcWealthDual(capital, 0, rates.min, 0, years);
+  const wealthMax  = calcWealthDual(capital, epargne, rates.max, tauxEpargneInvest, years);
+
   const score = scorePatrimoine(capital, revenu, epargne, tauxEpargne);
 
   const tauxMensuel = 0.035 / 12;
@@ -718,7 +749,7 @@ function render() {
         </div>
       </div>
       <div class="adjust-row">
-        <span class="adjust-label">Épargne mensuelle</span>
+        <span class="adjust-label">Épargne mensuelle <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— ce que tu peux mettre de côté chaque mois</span></span>
         <div class="adjust-slider-wrap">
           <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
           <input type="number" class="adjust-input" id="inp-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="syncEpargneSlider(this)" onblur="applyEpargneInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
@@ -742,17 +773,17 @@ function render() {
       <div class="card">
         <div class="card-label">Capacité d'épargne</div>
         <div class="card-val green">${fmt(epargne)}</div>
-        <div class="card-sub">${fmtPct(tauxEpargne)} des revenus · ${tauxEpargne >= 0.15 ? '✅ Excellent' : tauxEpargne >= 0.08 ? '👍 Bien' : '⚠️ À optimiser'}</div>
+        <div class="card-sub">Ce que tu mets de côté chaque mois · ${fmtPct(tauxEpargne)} des revenus · ${tauxEpargne >= 0.15 ? '✅ Excellent' : tauxEpargne >= 0.08 ? '👍 Bien' : '⚠️ À optimiser'}</div>
       </div>
       <div class="card">
         <div class="card-label">Dépenses mensuelles</div>
         <div class="card-val">${fmt(depenses)}</div>
-        <div class="card-sub">Charges courantes estimées</div>
+        <div class="card-sub">Ex : loyer, gaz, eau, élec, crédit voiture…</div>
       </div>
       <div class="card">
         <div class="card-label">Épargne annuelle</div>
         <div class="card-val green">${fmt(epargne * 12)}</div>
-        <div class="card-sub">Effort d'investissement / an</div>
+        <div class="card-sub">${fmt(epargne)}/mois × 12 mois = effort d'investissement annuel</div>
       </div>
     </div>
 
@@ -769,7 +800,7 @@ function render() {
             <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(tauxEpargne*100).toFixed(0)}%;background:var(--green-light)"></div></div>
           </div>
         </div>
-        <div class="chart-wrap" style="flex:1;min-width:0;height:160px">
+        <div style="flex:1;min-width:0;position:relative;height:160px">
           <canvas id="chart-budget"></canvas>
         </div>
       </div>
@@ -786,31 +817,22 @@ function render() {
       <div class="card">
         <div class="card-label">Capital de départ</div>
         <div class="card-val">${fmt(capital)}</div>
-        <div class="card-sub">Investi dès maintenant</div>
+        <div class="card-sub">Ce que tu es prêt à investir dès aujourd'hui</div>
       </div>
       <div class="card">
-        <div class="card-label">Patrimoine final estimé</div>
-        <div class="card-val green">${fmt(finalWithEpargne)}</div>
-        <div class="card-sub">Avec épargne mensuelle · scénario central</div>
+        <div class="card-label">Estimation moyenne capital seul</div>
+        <div class="card-val" style="color:var(--gold-light)">${fmt(finalMid)}</div>
+        <div class="card-sub">Placé à ${fmtPct(rates.mid)}/an, tes <strong style="color:#fff">${fmt(capital)}</strong> deviennent <strong style="color:#fff">${fmt(finalMid)}</strong> en ${years} ans</div>
       </div>
       <div class="card">
-        <div class="card-label">Gain sur intérêts composés</div>
-        <div class="card-val green">${fmt(gainMid)}</div>
-        <div class="card-sub">Capital seul · ${fmtPct(rates.mid)}/an</div>
+        <div class="card-label">Épargne mensuelle placée</div>
+        <div class="card-val green">${fmt(finalEpargne)} au bout de ${years} ans</div>
+        <div class="card-sub">En ${years} ans tu mets de côté <strong style="color:#fff">${fmt(epargne * 12 * years)}</strong> (${fmt(epargne)}/mois × 12 × ${years} ans) · ton argent te rapporte en plus <strong style="color:#fff">${fmt(gainEpargne)} de gains</strong> à ${fmtPct(tauxEpargneInvest)}/an</div>
       </div>
       <div class="card">
-        <div class="card-label">Fourchette réaliste</div>
-        <div class="card-val" style="font-size:17px">${fmt(finalMin)} – ${fmt(finalMax)}</div>
-        <div class="card-sub">Scénario prudent → optimiste</div>
-      </div>
-    </div>
-
-    <div class="range-bar">
-      <div class="range-title">Plage de projection</div>
-      <div class="range-track"><div class="range-fill" id="range-fill" style="width:65%"></div></div>
-      <div class="range-labels">
-        <span class="range-min">Prudent : ${fmt(finalMin)}</span>
-        <span class="range-max">Optimiste : ${fmt(finalMax)}</span>
+        <div class="card-label">Patrimoine total estimé</div>
+        <div class="card-val" style="color:var(--green-light);font-size:22px">${fmt(finalWithEpargne)}</div>
+        <div class="card-sub"><strong style="color:#fff">${fmt(finalCapitalMid)}</strong> (capital) + <strong style="color:#fff">${fmt(finalEpargne)}</strong> (épargne) en ${years} ans</div>
       </div>
     </div>
 
@@ -819,15 +841,18 @@ function render() {
       <div class="chart-wrap">
         <canvas id="chart-wealth"></canvas>
       </div>
+      <div style="margin-top:12px;padding:12px 14px;background:rgba(200,150,62,0.07);border:1px solid rgba(200,150,62,0.2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;">
+        💡 <strong style="color:var(--gold-light)">Comment lire ce graphique ?</strong> Ton capital de <strong style="color:#fff">${fmt(capital)}</strong> est placé à <strong style="color:var(--text)">${fmtPct(rates.mid)}/an</strong>. Ton épargne de <strong style="color:#fff">${fmt(epargne)}/mois</strong> est placée à <strong style="color:var(--text)">${fmtPct(tauxEpargneInvest)}/an</strong>. Résultat en ${years} ans : <strong style="color:var(--green-light)">${fmt(finalWithEpargne)}</strong>.
+      </div>
     </div>
 
     <!-- MID CTA -->
     <div style="background:linear-gradient(135deg,rgba(200,150,62,0.08),rgba(200,150,62,0.04));border:1px solid rgba(200,150,62,0.25);border-radius:12px;padding:20px 24px;margin:24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
       <div>
-        <p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">${capital < 5000 ? '🎯 Ton prochain cap : 5 000 € d\'épargne' : '💡 Ces chiffres vous surprennent ?'}</p>
-        <p style="font-size:12px;color:var(--text2);">${capital < 5000 ? 'Le guide gratuit d\'Alexandre te montre comment y arriver étape par étape.' : 'Un audit patrimonial gratuit permet de valider et personnaliser ces projections avec un expert.'}</p>
+        <p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">💡 Ces chiffres vous surprennent ?</p>
+        <p style="font-size:12px;color:var(--text2);">Un audit patrimonial gratuit permet de valider et personnaliser ces projections avec un expert.</p>
       </div>
-      <a href="${ctaConfig(capital).url}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:11px 22px;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .2s;box-shadow:0 3px 16px rgba(200,150,62,0.3);">${ctaConfig(capital).midLabel}</a>
+      <a href="${CALENDLY_URL}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:11px 22px;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .2s;box-shadow:0 3px 16px rgba(200,150,62,0.3);">📅 Prendre RDV gratuitement →</a>
     </div>
 
     <!-- 3. INTÉRÊTS COMPOSÉS -->
@@ -841,12 +866,12 @@ function render() {
       <div class="card">
         <div class="card-label">Gain moyen annuel</div>
         <div class="card-val green">${fmt(annualMid)}</div>
-        <div class="card-sub">Intérêts composés uniquement</div>
+        <div class="card-sub">= ${fmt(gainMid)} de gains totaux ÷ ${years} ans · <strong style="color:var(--gold-light)">sur ton capital de départ uniquement</strong> (${fmt(capital)} à ${fmtPct(rates.mid)}/an)</div>
       </div>
       <div class="card">
         <div class="card-label">Gain moyen mensuel</div>
         <div class="card-val green">${fmt(annualMid / 12)}</div>
-        <div class="card-sub">Argent travaillant pour toi</div>
+        <div class="card-sub">Généré automatiquement · capital de départ seul, sans compter ton épargne mensuelle</div>
       </div>
       <div class="card">
         <div class="card-label">Rendement cible</div>
@@ -856,7 +881,7 @@ function render() {
       <div class="card">
         <div class="card-label">Effet levier total</div>
         <div class="card-val" style="color:var(--gold-light)">×${(finalMid / capital).toFixed(2)}</div>
-        <div class="card-sub">Multiplicateur sur ${years} ans</div>
+        <div class="card-sub">Placer à ${fmtPct(rates.mid)}/an pendant ${years} ans → ton capital est multiplié par ${(finalMid / capital).toFixed(2)}</div>
       </div>
     </div>
 
@@ -960,8 +985,15 @@ function updateSliderTrack(el) {
   const pct = ((el.value - el.min) / (el.max - el.min)) * 100;
   el.style.setProperty('--val', pct + '%');
 }
+/* ── DEBOUNCE ────────────────────────────────────────────────────── */
+let _rerenderTimer = null;
+function debouncedRerender() {
+  if (_rerenderTimer) clearTimeout(_rerenderTimer);
+  _rerenderTimer = setTimeout(() => { rerender(); }, 300);
+}
+
 /* ── INPUT HANDLERS ─────────────────────────────────────────────────── */
-// Slider → update track + input field + rerender immédiat
+// Slider → update track + input field + rerender différé
 function updateRevenu(el) {
   updateSliderTrack(el);
   state.revenu = parseInt(el.value);
@@ -972,14 +1004,14 @@ function updateRevenu(el) {
   if (slE) { slE.value = state.epargne; updateSliderTrack(slE); }
   const inpE = document.getElementById('inp-epargne');
   if (inpE) inpE.value = state.epargne;
-  rerender();
+  debouncedRerender();
 }
 function updateEpargne(el) {
   updateSliderTrack(el);
   state.epargne = parseInt(el.value);
   const inp = document.getElementById('inp-epargne');
   if (inp) inp.value = state.epargne;
-  rerender();
+  debouncedRerender();
 }
 
 // Input → sync slider visuellement en temps réel (sans rerender)
@@ -1062,20 +1094,37 @@ function chartDefaults() {
 function drawBudgetChart(depenses, epargne) {
   const ctx = document.getElementById('chart-budget');
   if (!ctx) return;
+  const total = depenses + epargne;
+  const pctDepenses = Math.round(depenses / total * 100);
+  const pctEpargne = Math.round(epargne / total * 100);
   charts['budget'] = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: ['Dépenses', 'Épargne'],
+      labels: [`Dépenses (${pctDepenses}%)`, `Épargne (${pctEpargne}%)`],
       datasets: [{ data: [depenses, epargne], backgroundColor: [BLUE, GREEN], borderWidth: 0, hoverOffset: 4 }]
     },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
         legend: { position: 'bottom', labels: { color: '#A0A8B4', font: { family: 'DM Sans', size: 11 }, padding: 12 } },
-        tooltip: { backgroundColor: BG2, borderColor: '#2A2A2E', borderWidth: 1, titleColor: '#E8E8E8', bodyColor: '#A0A8B4', callbacks: { label: c => ' ' + fmt(c.parsed) } }
+        tooltip: { backgroundColor: BG2, borderColor: '#2A2A2E', borderWidth: 1, titleColor: '#E8E8E8', bodyColor: '#A0A8B4', callbacks: { label: c => ' ' + fmt(c.parsed) + ' (' + Math.round(c.parsed/total*100) + '%)' } }
       },
       cutout: '65%'
-    }
+    },
+    plugins: [{
+      id: 'centerText',
+      afterDraw(chart) {
+        const { ctx: c, chartArea: { left, right, top, bottom } } = chart;
+        const cx = (left + right) / 2, cy = (top + bottom) / 2;
+        c.save();
+        c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillStyle = '#4ABA7A'; c.font = 'bold 14px DM Sans';
+        c.fillText(pctEpargne + '%', cx, cy - 8);
+        c.fillStyle = '#5A6070'; c.font = '10px DM Sans';
+        c.fillText('épargné', cx, cy + 8);
+        c.restore();
+      }
+    }]
   });
 }
 
@@ -1188,13 +1237,6 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
 }
 
 // ─── MODIFIER SIMULATION ─────────────────────────────────────────────────────
-function updatePrenomLive(input) {
-  // Met à jour le prénom dans le bandeau en temps réel sans re-render complet
-  state.prenom = input.value || 'Vous';
-  const span = document.querySelector('.candidat-info h2 span');
-  if (span) span.textContent = state.prenom;
-}
-
 function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
   document.getElementById('btn-modifier').textContent = '✕ Fermer';
@@ -1203,7 +1245,7 @@ function _showModifierPanel() {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Prénom</label>
-        <input id="mod-prenom" value="${prenom}" oninput="updatePrenomLive(this)" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;">
+        <input id="mod-prenom" value="${prenom}" oninput="applyModif()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;">
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Capital disponible (€)</label>
@@ -1230,7 +1272,6 @@ function _showModifierPanel() {
         </select>
       </div>
     </div>
-    <button onclick="applyModif(true)" style="margin-top:16px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:10px 24px;border-radius:8px;border:none;cursor:pointer;transition:transform .2s;">✅ Recalculer</button>
   </div>`;
   const app = document.getElementById('app');
   app.insertAdjacentHTML('beforebegin', panelHtml);
@@ -1255,7 +1296,7 @@ function applyModif(force) {
   if (!p) return;
   const newPersonnage = per.value;
   const profil = PROFILS[newPersonnage] || PROFILS['cdi'];
-  state.prenom = p.value || 'Vous';
+  state.prenom = p.value || 'Le candidat';
   state.capital = Math.max(0, parseInt(c.value) || 0);
   state.personnage = newPersonnage;
   state.risque = ri.value;
