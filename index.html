@@ -431,13 +431,15 @@ header {
 <script>
 // ─── PROFILS PAR PERSONNAGE ─────────────────────────────────────────────────
 const PROFILS = {
-  'cdi':         { label: 'Salarié CDI',          revenu: 2500, epargne: 400,  depenses: 2100, emoji: '👔' },
-  'cdd':         { label: 'Salarié CDD/Intérim',  revenu: 1800, epargne: 200,  depenses: 1600, emoji: '📋' },
-  'independant': { label: 'Indépendant/Freelance', revenu: 3500, epargne: 700,  depenses: 2800, emoji: '🚀' },
-  'chef':        { label: "Chef d'entreprise",    revenu: 5000, epargne: 1200, depenses: 3800, emoji: '💼' },
-  'fonctionnaire':{ label: 'Fonctionnaire',        revenu: 2200, epargne: 350,  depenses: 1850, emoji: '🏛️' },
-  'etudiant':    { label: 'Étudiant(e)',           revenu: 800,  epargne: 80,   depenses: 720,  emoji: '🎓' },
-  'reconversion':{ label: 'En reconversion',       revenu: 1500, epargne: 150,  depenses: 1350, emoji: '🔄' },
+  'cdi':         { label: 'Salarié CDI',                    revenu: 2500, epargne: 400,  depenses: 2100, emoji: '👔' },
+  'cdd':         { label: 'Salarié CDD/Intérim',            revenu: 1800, epargne: 200,  depenses: 1600, emoji: '📋' },
+  'independant': { label: 'Indépendant/Freelance',           revenu: 3500, epargne: 700,  depenses: 2800, emoji: '🚀' },
+  'chef':        { label: "Chef d'entreprise",              revenu: 5000, epargne: 1200, depenses: 3800, emoji: '💼' },
+  'fonctionnaire':{ label: 'Fonctionnaire',                  revenu: 2200, epargne: 350,  depenses: 1850, emoji: '🏛️' },
+  'etudiant':    { label: 'Étudiant(e)',                    revenu: 800,  epargne: 80,   depenses: 720,  emoji: '🎓' },
+  'reconversion':{ label: 'En reconversion',                revenu: 1500, epargne: 150,  depenses: 1350, emoji: '🔄' },
+  'retraite':    { label: 'Retraité(e)',                    revenu: 1800, epargne: 300,  depenses: 1500, emoji: '👴' },
+  'inactif':     { label: 'Sans activité professionnelle',  revenu: 1000, epargne: 150,  depenses: 850,  emoji: '🏠' },
 };
 
 const CAPITAL_MAP = {
@@ -553,8 +555,8 @@ function parseParams() {
 
   // 2. Lettre Tally (A/B/C...) — mappées selon la question Profil/Situation
   if (!personnage) {
-    // A=CDI  B=CDD  C=Indépendant  D=Chef  E=Fonctionnaire  F=Étudiant  G=Reconversion
-    const LETTER = { 'a':'cdi', 'b':'cdd', 'c':'independant', 'd':'chef', 'e':'fonctionnaire', 'f':'etudiant', 'g':'reconversion' };
+    // A=CDI  B=CDD  C=Indépendant  D=Chef  E=Fonctionnaire  F=Étudiant  G=Reconversion  H=Retraité  I=Inactif
+    const LETTER = { 'a':'cdi', 'b':'cdd', 'c':'independant', 'd':'chef', 'e':'fonctionnaire', 'f':'etudiant', 'g':'reconversion', 'h':'retraite', 'i':'inactif' };
     if (LETTER[persLow]) personnage = LETTER[persLow];
   }
 
@@ -566,6 +568,8 @@ function parseParams() {
       : persLow.includes('fonct') || persLow.includes('agent') || persLow.includes('function') ? 'fonctionnaire'
       : persLow.includes('etudiant') || persLow.includes('étudiant') || persLow.includes('student') || persLow.includes('etude') || persLow.includes('étude') ? 'etudiant'
       : persLow.includes('reconv') || persLow.includes('transition') ? 'reconversion'
+      : persLow.includes('retrait') || persLow.includes('retraite') || persLow.includes('retiré') ? 'retraite'
+      : persLow.includes('inactif') || persLow.includes('sans activit') || persLow.includes('sans emploi') ? 'inactif'
       : 'cdi';
   }
 
