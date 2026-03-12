@@ -1188,6 +1188,13 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
 }
 
 // ─── MODIFIER SIMULATION ─────────────────────────────────────────────────────
+function updatePrenomLive(input) {
+  // Met à jour le prénom dans le bandeau en temps réel sans re-render complet
+  state.prenom = input.value || 'Vous';
+  const span = document.querySelector('.candidat-info h2 span');
+  if (span) span.textContent = state.prenom;
+}
+
 function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
   document.getElementById('btn-modifier').textContent = '✕ Fermer';
@@ -1196,7 +1203,7 @@ function _showModifierPanel() {
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Prénom</label>
-        <input id="mod-prenom" value="${prenom}" oninput="applyModif()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;">
+        <input id="mod-prenom" value="${prenom}" oninput="updatePrenomLive(this)" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:9px 12px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;">
       </div>
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Capital disponible (€)</label>
@@ -1248,7 +1255,7 @@ function applyModif(force) {
   if (!p) return;
   const newPersonnage = per.value;
   const profil = PROFILS[newPersonnage] || PROFILS['cdi'];
-  state.prenom = p.value || 'Le candidat';
+  state.prenom = p.value || 'Vous';
   state.capital = Math.max(0, parseInt(c.value) || 0);
   state.personnage = newPersonnage;
   state.risque = ri.value;
