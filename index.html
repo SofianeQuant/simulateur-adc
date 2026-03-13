@@ -457,10 +457,10 @@ const CAPITAL_MAP = {
 };
 
 const OBJECTIF_MAP = {
-  'performance': { label: 'Performance long terme', horizon: 8 },
+  'performance': { label: 'Performance long terme', horizon: 5 },
   'passif':      { label: 'Revenus passifs',         horizon: 5 },
-  'retraite':    { label: 'Retraite / liberté',       horizon: 15 },
-  'projet':      { label: 'Gros projet',              horizon: 3 },
+  'retraite':    { label: 'Retraite / liberté',       horizon: 5 },
+  'projet':      { label: 'Gros projet',              horizon: 5 },
   'fiscalite':   { label: 'Optimisation fiscale',     horizon: 5 },
 };
 
@@ -833,17 +833,17 @@ function render() {
       <div class="card">
         <div class="card-label">Estimation moyenne capital seul</div>
         <div class="card-val" style="color:var(--gold-light)">${fmt(finalMid)}</div>
-        <div class="card-sub">Placé à ${fmtPct(rates.mid)}/an, tes <strong style="color:#fff">${fmt(capital)}</strong> deviennent <strong style="color:#fff">${fmt(finalMid)}</strong> en ${years} ans</div>
+        <div class="card-sub">Placé à ${fmtPct(rates.mid)}/an, tes <strong style="color:#fff">${fmt(capital)}</strong> deviennent <strong style="color:#fff">${fmt(finalMid)}</strong> dans ${years} ans</div>
       </div>
       <div class="card">
         <div class="card-label">Épargne mensuelle placée</div>
-        <div class="card-val green">${fmt(finalEpargne)} au bout de ${years} ans</div>
+        <div class="card-val green">${fmt(finalEpargne)} dans ${years} ans</div>
         <div class="card-sub">En ${years} ans tu mets de côté <strong style="color:#fff">${fmt(epargne * 12 * years)}</strong> (${fmt(epargne)}/mois × 12 × ${years} ans) · ton argent te rapporte en plus <strong style="color:#fff">${fmt(gainEpargne)} de gains</strong> à ${fmtPct(tauxEpargneInvest)}/an</div>
       </div>
       <div class="card">
         <div class="card-label">Patrimoine total estimé</div>
         <div class="card-val" style="color:var(--green-light);font-size:22px">${fmt(finalWithEpargne)}</div>
-        <div class="card-sub"><strong style="color:#fff">${fmt(finalCapitalMid)}</strong> (capital) + <strong style="color:#fff">${fmt(finalEpargne)}</strong> (épargne) en ${years} ans</div>
+        <div class="card-sub"><strong style="color:#fff">${fmt(finalCapitalMid)}</strong> (capital) + <strong style="color:#fff">${fmt(finalEpargne)}</strong> (épargne) dans ${years} ans</div>
       </div>
     </div>
 
@@ -853,7 +853,7 @@ function render() {
         <canvas id="chart-wealth"></canvas>
       </div>
       <div style="margin-top:12px;padding:12px 14px;background:rgba(200,150,62,0.07);border:1px solid rgba(200,150,62,0.2);border-radius:8px;font-size:12px;color:var(--text2);line-height:1.6;">
-        💡 <strong style="color:var(--gold-light)">Comment lire ce graphique ?</strong> Ton capital de <strong style="color:#fff">${fmt(capital)}</strong> est placé à <strong style="color:var(--text)">${fmtPct(rates.mid)}/an</strong>. Ton épargne de <strong style="color:#fff">${fmt(epargne)}/mois</strong> est placée à <strong style="color:var(--text)">${fmtPct(tauxEpargneInvest)}/an</strong>. Résultat en ${years} ans : <strong style="color:var(--green-light)">${fmt(finalWithEpargne)}</strong>.
+        💡 <strong style="color:var(--gold-light)">Comment lire ce graphique ?</strong> Ton capital de <strong style="color:#fff">${fmt(capital)}</strong> est placé à <strong style="color:var(--text)">${fmtPct(rates.mid)}/an</strong>. Ton épargne de <strong style="color:#fff">${fmt(epargne)}/mois</strong> est placée à <strong style="color:var(--text)">${fmtPct(tauxEpargneInvest)}/an</strong>. Résultat dans ${years} ans : <strong style="color:var(--green-light)">${fmt(finalWithEpargne)}</strong>.
       </div>
     </div>
 
@@ -873,71 +873,41 @@ function render() {
       <div class="section-line"></div>
     </div>
 
-    <div class="cards-grid">
-      <div class="card">
-        <div class="card-label">Gain moyen annuel</div>
-        <div class="card-val green">${fmt(annualMid)}</div>
-        <div class="card-sub">= ${fmt(gainMid)} de gains totaux ÷ ${years} ans · <strong style="color:var(--gold-light)">sur ton capital de départ uniquement</strong> (${fmt(capital)} à ${fmtPct(rates.mid)}/an)</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Gain moyen mensuel</div>
-        <div class="card-val green">${fmt(annualMid / 12)}</div>
-        <div class="card-sub">Généré automatiquement · capital de départ seul, sans compter ton épargne mensuelle</div>
-      </div>
+    <div class="cards-grid" style="grid-template-columns:1fr">
       <div class="card">
         <div class="card-label">Rendement cible</div>
         <div class="card-val">${fmtPct(rates.mid)}/an</div>
         <div class="card-sub">Profil ${risque === 'faible' ? 'prudent' : risque === 'elevee' ? 'dynamique' : 'équilibré'} · ${rates.product}</div>
       </div>
-      <div class="card">
-        <div class="card-label">Effet levier total</div>
-        <div class="card-val" style="color:var(--gold-light)">×${(finalMid / capital).toFixed(2)}</div>
-        <div class="card-sub">Placer à ${fmtPct(rates.mid)}/an pendant ${years} ans → ton capital est multiplié par ${(finalMid / capital).toFixed(2)}</div>
-      </div>
     </div>
 
     <div class="chart-box" style="margin-top:12px">
-      <h4>Capital investi vs Intérêts générés (cumulés)</h4>
+      <h4>Capital investi vs Gains générés (cumulés)</h4>
       <div class="chart-wrap">
         <canvas id="chart-compound"></canvas>
       </div>
     </div>
 
-    <!-- 4. MENSUALITÉS -->
+    <!-- 4. CAPACITÉ IMMO -->
     <div class="section-title">
       <div class="section-num">4</div>
-      <h3>Capacité Financière · Mensualités & Investissement</h3>
+      <h3>Capacité d'emprunt immobilier</h3>
       <div class="section-line"></div>
     </div>
 
-    <div class="cards-grid">
-      <div class="card">
-        <div class="card-label">Capacité mensualité crédit</div>
-        <div class="card-val">${fmt(mensualiteMax)}</div>
-        <div class="card-sub">40% de l'épargne disponible</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Pouvoir d'achat immo</div>
-        <div class="card-val" style="font-size:${prixImmoMax > 99999 ? '19px' : '26px'}">${fmt(prixImmoMax)}</div>
-        <div class="card-sub">Crédit 20 ans à 3.5% (estimation)</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Investissement mensuel idéal</div>
-        <div class="card-val green">${fmt(epargne)}</div>
-        <div class="card-sub">100% de la capacité d'épargne</div>
-      </div>
-      <div class="card">
-        <div class="card-label">Effort total sur ${years} ans</div>
-        <div class="card-val">${fmt(epargne * 12 * years)}</div>
-        <div class="card-sub">Versements programmés cumulés</div>
+    <div class="adjust-section">
+      <h4>🏦 Crédits en cours <span class="adjust-badge">Mensualités déjà engagées</span></h4>
+      <div class="adjust-row">
+        <span class="adjust-label">Crédits en cours / mois <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— auto, conso, autres crédits hors immo</span></span>
+        <div class="adjust-slider-wrap">
+          <input type="range" class="adjust-slider" id="sl-credit" min="0" max="2000" step="50" value="${state.creditEnCours||0}" oninput="updateCredit(this)">
+          <input type="number" class="adjust-input" id="inp-credit" min="0" max="2000" step="50" value="${state.creditEnCours||0}" oninput="syncCreditSlider(this)" onblur="applyCreditInput(this)" onkeydown="if(event.key===\'Enter\'){this.blur()}">
+        </div>
       </div>
     </div>
 
-    <div class="chart-box" style="margin-top:12px">
-      <h4>Scénarios d'investissement mensuel comparés</h4>
-      <div class="chart-wrap">
-        <canvas id="chart-monthly"></canvas>
-      </div>
+    <div id="immo-result-block">
+      ${renderImmoBlock(revenu, state.creditEnCours||0, capital)}
     </div>
 
     <!-- INSIGHTS -->
@@ -987,7 +957,7 @@ function render() {
 }
 
 function initSliders() {
-  ['sl-revenu', 'sl-epargne', 'sl-capital'].forEach(id => {
+  ['sl-revenu', 'sl-epargne', 'sl-capital', 'sl-credit'].forEach(id => {
     const el = document.getElementById(id);
     if (el) updateSliderTrack(el);
   });
@@ -1094,6 +1064,96 @@ function applyCapitalInput(el) {
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   rerender();
 }
+function updateCredit(el) {
+  updateSliderTrack(el);
+  state.creditEnCours = parseInt(el.value);
+  const inp = document.getElementById('inp-credit');
+  if (inp) inp.value = state.creditEnCours;
+  const block = document.getElementById('immo-result-block');
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital);
+}
+function syncCreditSlider(el) {
+  let v = parseInt(el.value);
+  if (!isNaN(v)) {
+    if (v > 2000) v = 2000;
+    const sl = document.getElementById('sl-credit');
+    if (sl) { sl.value = v; updateSliderTrack(sl); }
+  }
+}
+function applyCreditInput(el) {
+  let v = parseInt(el.value) || 0;
+  if (v < 0) v = 0;
+  if (v > 2000) v = 2000;
+  el.value = v;
+  state.creditEnCours = v;
+  const sl = document.getElementById('sl-credit');
+  if (sl) { sl.value = v; updateSliderTrack(sl); }
+  const block = document.getElementById('immo-result-block');
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital);
+}
+
+function renderImmoBlock(revenu, creditEnCours, capital) {
+  const tauxMensuel = 0.035 / 12;
+  const nMois20 = 240;
+  const nMois25 = 300;
+  const maxEndettement = revenu * 0.35;
+  const mensualiteImmoMax = Math.max(0, maxEndettement - creditEnCours);
+  const capaciteImmo20 = mensualiteImmoMax * (1 - Math.pow(1 + tauxMensuel, -nMois20)) / tauxMensuel;
+  const capaciteImmo25 = mensualiteImmoMax * (1 - Math.pow(1 + tauxMensuel, -nMois25)) / tauxMensuel;
+  const apport = capital;
+  const budgetTotal20 = capaciteImmo20 + apport;
+  const budgetTotal25 = capaciteImmo25 + apport;
+  const tauxEndetActuel = creditEnCours / revenu * 100;
+  const tauxRestant = Math.max(0, 35 - tauxEndetActuel);
+  const color = mensualiteImmoMax > 0 ? 'var(--green-light)' : 'var(--red)';
+  const barW20 = Math.min(100, (budgetTotal20 / 400000) * 100).toFixed(0);
+  const barW25 = Math.min(100, (budgetTotal25 / 400000) * 100).toFixed(0);
+
+  return `
+    <div class="card" style="margin-bottom:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 22px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:18px;">
+        <div>
+          <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Revenus nets mensuels</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;">${Math.round(revenu).toLocaleString('fr-FR')} €</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Taux d'endettement actuel</div>
+          <div style="font-size:22px;font-weight:800;color:${tauxEndetActuel > 30 ? 'var(--red)' : 'var(--gold-light)'};">${tauxEndetActuel.toFixed(1)}%</div>
+          <div style="font-size:11px;color:var(--text3);">limite légale : 35%</div>
+        </div>
+      </div>
+
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:14px 16px;margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:8px;">
+          <span style="font-size:12px;color:var(--text2);">Capacité mensualité immo disponible</span>
+          <span style="font-size:14px;font-weight:800;color:${color};">${Math.round(mensualiteImmoMax).toLocaleString('fr-FR')} €/mois</span>
+        </div>
+        <div style="font-size:11px;color:var(--text3);">35% de ${Math.round(revenu).toLocaleString('fr-FR')} € = ${Math.round(maxEndettement).toLocaleString('fr-FR')} € max · dont ${Math.round(creditEnCours).toLocaleString('fr-FR')} € déjà engagés · reste <strong style="color:#fff">${Math.round(mensualiteImmoMax).toLocaleString('fr-FR')} €</strong> pour l'immo</div>
+      </div>
+
+      ${mensualiteImmoMax <= 0 ? `<div style="background:rgba(224,85,85,0.08);border:1px solid rgba(224,85,85,0.3);border-radius:8px;padding:14px 16px;font-size:13px;color:var(--red);">⚠️ Tes crédits en cours dépassent déjà la limite des 35% — aucune capacité d'emprunt immo disponible à ce stade.</div>` : `
+      <div style="margin-bottom:6px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--text2);">Budget total sur 20 ans <span style="color:var(--text3);font-size:11px;">(crédit + apport ${Math.round(apport).toLocaleString('fr-FR')} €)</span></span>
+          <span style="font-size:14px;font-weight:800;color:var(--gold-light);">${Math.round(budgetTotal20).toLocaleString('fr-FR')} €</span>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:14px;">
+          <div style="height:100%;width:${barW20}%;background:linear-gradient(90deg,var(--gold-dark),var(--gold-light));border-radius:3px;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:12px;color:var(--text2);">Budget total sur 25 ans <span style="color:var(--text3);font-size:11px;">(crédit + apport)</span></span>
+          <span style="font-size:14px;font-weight:800;color:var(--green-light);">${Math.round(budgetTotal25).toLocaleString('fr-FR')} €</span>
+        </div>
+        <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+          <div style="height:100%;width:${barW25}%;background:linear-gradient(90deg,var(--green),var(--green-light));border-radius:3px;"></div>
+        </div>
+      </div>
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(200,150,62,0.06);border:1px solid rgba(200,150,62,0.15);border-radius:8px;font-size:11px;color:var(--text2);line-height:1.6;">
+        💡 Estimation à taux fixe 3.5%/an · Hors frais de notaire (~8%) · Apport = capital disponible de <strong style="color:#fff">${Math.round(apport).toLocaleString('fr-FR')} €</strong>
+      </div>`}
+    </div>`;
+}
+
 // Compat aliases (plus utilisés mais gardés par sécurité)
 function updateRevenuInput(el) { applyRevenuInput(el); }
 function clampRevenuInput(el) { applyRevenuInput(el); }
@@ -1195,7 +1255,7 @@ function drawCompoundChart(capital, epargne, rate, years) {
       labels,
       datasets: [
         { label: 'Capital investi', data: capitalInvesti, backgroundColor: 'rgba(74,143,232,0.6)', borderRadius: 4, borderSkipped: false },
-        { label: 'Intérêts générés', data: interets, backgroundColor: 'rgba(75,186,122,0.7)', borderRadius: 4, borderSkipped: false },
+        { label: 'Gains générés', data: interets, backgroundColor: 'rgba(75,186,122,0.7)', borderRadius: 4, borderSkipped: false },
       ]
     },
     options: { ...chartDefaults(), scales: { ...chartDefaults().scales, x: { ...chartDefaults().scales.x, stacked: true }, y: { ...chartDefaults().scales.y, stacked: true } } }
@@ -1379,7 +1439,7 @@ function exportPDF() {
 window.addEventListener('DOMContentLoaded', () => {
   const parsed = parseParams();
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
-  state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne };
+  state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne, creditEnCours: 0 };
   render();
 });
 </script>
