@@ -659,8 +659,440 @@ function ctaConfig(capital) {
   };
 }
 
+// ─── PLAN D'ACTION ÉPARGNE (capital < 5 000 €) ───────────────────────────────
+function renderEpargnePlan(prenom, capital, revenu, epargne) {
+  const fmt = n => Math.round(n).toLocaleString('fr-FR') + ' €';
+  const cible = 5000;
+  const manque = Math.max(0, cible - capital);
+
+  // Calcul des 3 horizons
+  const horizons = [
+    { mois: 6,  label: '6 mois',  besoin: Math.ceil(manque / 6 / 10) * 10 },
+    { mois: 12, label: '12 mois', besoin: Math.ceil(manque / 12 / 10) * 10 },
+    { mois: 24, label: '24 mois', besoin: Math.ceil(manque / 24 / 10) * 10 },
+  ];
+
+  // Taux effort : effort / revenu
+  horizons.forEach(h => { h.taux = ((h.besoin / revenu) * 100).toFixed(0); });
+
+  const tips = [
+    { icon: '🏦', titre: 'Livret A en priorité', texte: 'Zéro risque, disponible à tout moment, 3%/an net d\'impôt. Idéal pour construire ton matelas de sécurité.' },
+    { icon: '🔁', titre: 'Automatise le virement', texte: 'Programme un virement automatique le jour de paie. Tu n\'épargnes pas ce qui reste — tu dépenses ce qui reste après épargne.' },
+    { icon: '✂️', titre: 'Traque les abonnements oubliés', texte: 'Netflix, Spotify, salles de sport... Liste tout. Une heure de nettoyage peut libérer 50–100 €/mois sans effort.' },
+    { icon: '🎯', titre: 'Fixe un cap visible', texte: `${fmt(cible)} est un cap psychologique fort : c\'est là que les vraies stratégies d\'investissement deviennent accessibles.` },
+  ];
+
+  document.getElementById('app').innerHTML = `
+    <!-- CANDIDAT BANNER -->
+    <div class="candidat-banner">
+      <div class="candidat-info">
+        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#111;flex-shrink:0;">${prenom.charAt(0).toUpperCase()}</div>
+        <div>
+          <div class="candidat-name">${prenom}</div>
+          <div class="candidat-tag">Plan d'action épargne</div>
+        </div>
+      </div>
+      <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;">✏️ Modifier ma simulation</button>
+    </div>
+
+    <div class="adjust-section" id="modifier-panel" style="display:none;">
+      <h4>Ajustements</h4>
+      <div class="adjust-row">
+        <label class="adjust-label">Revenus nets</label>
+        <div class="adjust-ctrl">
+          <input type="range" class="adjust-slider" id="sl-revenu" min="500" max="10000" step="100" value="${revenu}" oninput="updateRevenu(this)">
+          <input type="number" class="adjust-input" id="inp-revenu" min="500" max="10000" step="100" value="${revenu}" oninput="syncRevenuSlider(this)" onblur="applyRevenuInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
+      </div>
+      <div class="adjust-row">
+        <label class="adjust-label">Épargne mensuelle</label>
+        <div class="adjust-ctrl">
+          <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
+          <input type="number" class="adjust-input" id="inp-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="syncEpargneSlider(this)" onblur="applyEpargneInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
+      </div>
+      <div class="adjust-row">
+        <label class="adjust-label">Capital disponible</label>
+        <div class="adjust-ctrl">
+          <input type="range" class="adjust-slider" id="sl-capital" min="0" max="200000" step="500" value="${capital}" oninput="updateCapital(this)">
+          <input type="number" class="adjust-input" id="inp-capital" min="0" max="200000" step="500" value="${capital}" oninput="syncCapitalSlider(this)" onblur="applyCapitalInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
+      </div>
+    </div>
+
+    <!-- INTRO -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:20px;">
+      <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">🌱 Ta situation actuelle</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Capital actuel</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;">${fmt(capital)}</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Épargne / mois</div>
+          <div style="font-size:20px;font-weight:800;color:var(--green-light);">${fmt(epargne)}</div>
+        </div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Objectif cible</div>
+          <div style="font-size:20px;font-weight:800;color:var(--gold-light);">${fmt(cible)}</div>
+        </div>
+      </div>
+      ${manque > 0 ? `<div style="font-size:13px;color:var(--text2);line-height:1.6;">Il te manque <strong style="color:#fff">${fmt(manque)}</strong> pour atteindre les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> — le seuil à partir duquel les vraies stratégies d'investissement s'ouvrent. Voici ton plan.</div>` : `<div style="font-size:13px;color:var(--green-light);font-weight:700;">✅ Tu es déjà au seuil des ${fmt(cible)} — tu peux passer à l'étape supérieure.</div>`}
+    </div>
+
+    <!-- PLAN 3 HORIZONS -->
+    <div class="section-title">
+      <div class="section-num">1</div>
+      <h3>Plan d'action — Atteindre ${fmt(cible)}</h3>
+      <div class="section-line"></div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+      ${horizons.map((h, i) => {
+        const colors = ['var(--gold-light)', 'var(--green-light)', '#8bbef0'];
+        const borders = ['rgba(212,175,55,0.3)', 'rgba(75,186,122,0.3)', 'rgba(74,143,232,0.3)'];
+        const bgs = ['rgba(212,175,55,0.06)', 'rgba(75,186,122,0.05)', 'rgba(74,143,232,0.05)'];
+        const faisable = h.besoin <= epargne;
+        return `
+        <div style="background:${bgs[i]};border:1px solid ${borders[i]};border-radius:10px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;">
+          <div style="font-size:11px;font-weight:700;color:${colors[i]};text-transform:uppercase;letter-spacing:.08em;">En ${h.label}</div>
+          <div style="font-size:22px;font-weight:800;color:#fff;">${fmt(h.besoin)}<span style="font-size:13px;color:var(--text3);font-weight:500;">/mois</span></div>
+          <div style="font-size:10px;color:var(--text3);">${h.taux}% de tes revenus</div>
+          <div style="margin-top:4px;font-size:11px;font-weight:700;color:${faisable ? 'var(--green-light)' : 'var(--gold-light)'};">
+            ${faisable ? '✅ Dans tes cordes' : '⚡ Effort à faire'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <!-- BARRE DE PROGRESSION VERS 5K -->
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Progression vers ${fmt(cible)}</div>
+        <div style="font-size:12px;font-weight:800;color:var(--gold-light);">${Math.round(Math.min(100, capital / cible * 100))}%</div>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:8px;">
+        <div style="height:100%;width:${Math.min(100, capital / cible * 100).toFixed(0)}%;background:linear-gradient(90deg,var(--gold-dark),var(--gold-light));border-radius:4px;transition:width .6s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);">
+        <span>${fmt(capital)} aujourd'hui</span>
+        <span>🎯 ${fmt(cible)}</span>
+      </div>
+    </div>
+
+    <!-- CALCULATRICE SUIVI MOIS PAR MOIS -->
+    <div class="section-title">
+      <div class="section-num">2</div>
+      <h3>Suivi mois par mois</h3>
+      <div class="section-line"></div>
+    </div>
+
+    <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+
+      <!-- Sélecteur horizon -->
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        ${[6,12,24].map((m,i) => `
+        <button onclick="
+          document.querySelectorAll('.hz-btn').forEach(b=>{ b.style.background='var(--bg4)'; b.style.borderColor='var(--border)'; b.style.color='var(--text3)'; });
+          this.style.background='rgba(212,175,55,0.2)'; this.style.borderColor='var(--gold)'; this.style.color='var(--gold-light)';
+          document.getElementById('tracker-table').innerHTML = buildTracker(${m});
+        " class="hz-btn" style="flex:1;padding:8px;border-radius:7px;border:1px solid ${i===1?'var(--gold)':'var(--border)'};background:${i===1?'rgba(212,175,55,0.2)':'var(--bg4)'};color:${i===1?'var(--gold-light)':'var(--text3)'};font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">${m} mois</button>
+        `).join('')}
+      </div>
+
+      <!-- Table générée dynamiquement -->
+      <div id="tracker-table"></div>
+    </div>
+
+    <!-- CTA SUIVI EMAIL -->
+    <div id="suivi-block" style="margin-bottom:20px;">
+      <!-- État 1 : formulaire email -->
+      <div id="suivi-form" style="background:linear-gradient(135deg,rgba(74,143,232,0.08),rgba(74,143,232,0.03));border:1px solid rgba(74,143,232,0.25);border-radius:12px;padding:20px 22px;">
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px;">📬 Suis ta progression chaque mois</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.5;">Entre ton email — on te rappelle chaque mois de déclarer ton versement et on suit ton objectif avec toi.</div>
+
+        <!-- Champs capital & cible -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Capital de départ</div>
+            <div style="position:relative;">
+              <input id="suivi-capital-input" type="number" min="0" step="100" value="${capital}" style="width:100%;box-sizing:border-box;padding:9px 30px 9px 12px;border-radius:7px;border:1px solid rgba(74,143,232,0.3);background:var(--bg3);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;outline:none;" oninput="document.getElementById('suivi-capital-preview').textContent=parseInt(this.value||0).toLocaleString('fr-FR')+' €'">
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);pointer-events:none;">€</span>
+            </div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:5px;">Objectif cible</div>
+            <div style="position:relative;">
+              <input id="suivi-cible-input" type="number" min="100" step="100" value="${cible}" style="width:100%;box-sizing:border-box;padding:9px 30px 9px 12px;border-radius:7px;border:1px solid rgba(74,143,232,0.3);background:var(--bg3);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;outline:none;" oninput="document.getElementById('suivi-cible-preview').textContent=parseInt(this.value||0).toLocaleString('fr-FR')+' €'">
+              <span style="position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:12px;color:var(--text3);pointer-events:none;">€</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:12px;">
+          Départ : <strong style="color:#fff" id="suivi-capital-preview">${capital.toLocaleString('fr-FR')} €</strong> · Objectif : <strong style="color:var(--gold-light)" id="suivi-cible-preview">${cible.toLocaleString('fr-FR')} €</strong>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <input id="suivi-email" type="email" placeholder="ton@email.com" style="flex:1;min-width:200px;padding:10px 14px;border-radius:8px;border:1px solid rgba(74,143,232,0.4);background:var(--bg3);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;" oninput="this.style.borderColor='rgba(74,143,232,0.6)'">
+          <button onclick="activerSuivi()" style="padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#3a7bd5,#5a9bf5);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Activer le suivi →</button>
+        </div>
+        <div id="suivi-error" style="font-size:11px;color:var(--red);margin-top:6px;display:none;">Merci d'entrer un email valide.</div>
+      </div>
+
+      <!-- État 2 : tableau de suivi actif -->
+      <div id="suivi-actif" style="display:none;background:var(--bg2);border:1px solid rgba(74,143,232,0.25);border-radius:12px;padding:18px 20px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px;">
+          <div>
+            <div style="font-size:13px;font-weight:800;color:#fff;">📊 Ton suivi épargne</div>
+            <div id="suivi-email-label" style="font-size:11px;color:var(--text3);margin-top:2px;"></div>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <div id="suivi-total-badge" style="font-size:14px;font-weight:800;padding:6px 14px;border-radius:20px;background:rgba(75,186,122,0.12);border:1px solid rgba(75,186,122,0.3);color:var(--green-light);"></div>
+            <button onclick="document.getElementById('suivi-actif').style.display='none';document.getElementById('suivi-form').style.display='block';" style="padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:var(--bg3);color:var(--text3);font-family:'DM Sans',sans-serif;font-size:11px;cursor:pointer;">✏️ Modifier</button>
+          </div>
+        </div>
+
+        <!-- Grille mois -->
+        <div id="suivi-mois-grid" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px;"></div>
+
+        <!-- Ajouter versement -->
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;">+ Déclarer un versement</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <select id="suivi-mois-sel" style="padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;outline:none;"></select>
+            <input id="suivi-montant" type="number" placeholder="Montant €" min="0" step="10" style="width:120px;padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:#fff;font-family:'DM Sans',sans-serif;font-size:12px;outline:none;">
+            <button onclick="ajouterVersement()" style="padding:8px 16px;border-radius:7px;border:none;background:var(--green-light);color:#111;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;">Enregistrer ✓</button>
+          </div>
+        </div>
+
+        <!-- Progression réelle -->
+        <div id="suivi-progress" style="margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <!-- TIPS -->
+    <div class="section-title">
+      <div class="section-num">3</div>
+      <h3>Comment accélérer</h3>
+      <div class="section-line"></div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:24px;">
+      ${tips.map(t => `
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:9px;padding:14px 16px;display:flex;gap:12px;align-items:flex-start;">
+        <div style="font-size:22px;flex-shrink:0;">${t.icon}</div>
+        <div>
+          <div style="font-size:12px;font-weight:700;color:#fff;margin-bottom:3px;">${t.titre}</div>
+          <div style="font-size:12px;color:var(--text2);line-height:1.6;">${t.texte}</div>
+        </div>
+      </div>`).join('')}
+    </div>
+
+    <!-- MESSAGE FINAL -->
+    <div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(75,186,122,0.04));border:1px solid rgba(212,175,55,0.2);border-radius:12px;padding:20px 22px;text-align:center;">
+      <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;">Tu es au début du chemin — et c'est le meilleur moment 🚀</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto;">
+        Une fois les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> atteints, ce simulateur te montrera comment les faire travailler : ETF, immobilier, assurance-vie… Reviens à ce moment-là — ou contacte-nous pour construire un plan sur-mesure dès maintenant.
+      </div>
+      <div style="margin-top:16px;font-size:11px;color:var(--text3);">
+        ✅ 100% offert · ⚡ Réponse sous 24h
+      </div>
+    </div>
+
+  `;
+  // ── Générer le tableau mois par mois ──
+  window._trackerData = { capital, epargne, cible };
+  window.buildTracker = function(nbMois) {
+    const { capital, epargne, cible } = window._trackerData;
+    const besoin = Math.ceil(Math.max(0, cible - capital) / nbMois / 10) * 10;
+    const livretA = 0.03 / 12;
+    let cumul = capital;
+    let rows = '';
+    const today = new Date();
+    for (let m = 1; m <= nbMois; m++) {
+      const date = new Date(today.getFullYear(), today.getMonth() + m, 1);
+      const moisLabel = date.toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+      const interetsRaw = cumul * livretA;
+      cumul = cumul * (1 + livretA) + besoin;
+      const pct = Math.min(100, (cumul / cible * 100)).toFixed(0);
+      const atteint = cumul >= cible;
+      const barColor = atteint ? 'var(--green-light)' : pct > 60 ? 'var(--gold-light)' : 'var(--gold-dark)';
+      rows += `
+      <div style="display:grid;grid-template-columns:52px 1fr 90px 60px;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+        <div style="font-size:11px;color:var(--text3);font-weight:600;">${moisLabel}</div>
+        <div style="display:flex;align-items:center;gap:6px;">
+          <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;">
+            <div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .4s;"></div>
+          </div>
+          <div style="font-size:10px;color:${barColor};font-weight:700;white-space:nowrap;">${pct}%</div>
+        </div>
+        <div style="font-size:12px;font-weight:800;color:${atteint?'var(--green-light)':'#fff'};text-align:right;white-space:nowrap;">${Math.round(cumul).toLocaleString('fr-FR')} €</div>
+        <div style="font-size:10px;color:${atteint?'var(--green-light)':'var(--text3)'};text-align:right;white-space:nowrap;">${atteint ? '🎯 Atteint' : '+'+Math.round(interetsRaw)+' €'}</div>
+      </div>`;
+      if (atteint) break;
+    }
+    return `
+    <div style="font-size:10px;color:var(--text3);margin-bottom:10px;line-height:1.5;">
+      Effort mensuel : <strong style="color:#fff">+${Math.round(besoin).toLocaleString('fr-FR')} €/mois</strong> · placé sur Livret A à 3%/an
+    </div>
+    <div style="display:grid;grid-template-columns:52px 1fr 90px 60px;gap:8px;padding:0 0 6px;border-bottom:1px solid var(--border);margin-bottom:2px;">
+      <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;">Mois</div>
+      <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;">Progression</div>
+      <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;text-align:right;">Cumul</div>
+      <div style="font-size:9px;color:var(--text3);font-weight:700;text-transform:uppercase;text-align:right;">Intérêts</div>
+    </div>
+    ${rows}`;
+  };
+  document.getElementById('tracker-table').innerHTML = buildTracker(12);
+
+  // ── SUIVI EMAIL ──
+  const STORAGE_KEY_PREFIX = 'adc_suivi_';
+  let _suiviEmail = null;
+
+  function getSuiviData(email) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY_PREFIX + email);
+      return raw ? JSON.parse(raw) : { email, versements: {}, cible, capital };
+    } catch(e) { return { email, versements: {}, cible, capital }; }
+  }
+
+  function saveSuiviData(data) {
+    try { localStorage.setItem(STORAGE_KEY_PREFIX + data.email, JSON.stringify(data)); } catch(e) {}
+  }
+
+  function getMoisOptions() {
+    const opts = [];
+    const today = new Date();
+    for (let i = 0; i < 24; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+      const key = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+      const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+      opts.push({ key, label });
+    }
+    return opts;
+  }
+
+  function renderSuiviActif(email) {
+    _suiviEmail = email;
+    const data = getSuiviData(email);
+    document.getElementById('suivi-form').style.display = 'none';
+    document.getElementById('suivi-actif').style.display = 'block';
+    document.getElementById('suivi-email-label').textContent = email;
+
+    // Remplir le select mois
+    const sel = document.getElementById('suivi-mois-sel');
+    sel.innerHTML = getMoisOptions().map(o =>
+      `<option value="${o.key}">${o.label}</option>`
+    ).join('');
+
+    rafraichirSuivi(data);
+  }
+
+  function rafraichirSuivi(data) {
+    const totalVerse = Object.values(data.versements).reduce((s,v) => s + v, 0);
+    const totalAvecCapital = (data.capital || 0) + totalVerse;
+    const pctTotal = Math.min(100, (totalAvecCapital / data.cible * 100)).toFixed(0);
+
+    // Badge total
+    document.getElementById('suivi-total-badge').textContent =
+      Math.round(totalAvecCapital).toLocaleString('fr-FR') + ' € / ' + Math.round(data.cible).toLocaleString('fr-FR') + ' €';
+
+    // Grille mois
+    const grid = document.getElementById('suivi-mois-grid');
+    const moisAvecVersement = Object.entries(data.versements).sort();
+    if (moisAvecVersement.length === 0) {
+      grid.innerHTML = `<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px 0;">Aucun versement enregistré pour l'instant.</div>`;
+    } else {
+      grid.innerHTML = moisAvecVersement.map(([moisKey, montant]) => {
+        const [y, m] = moisKey.split('-');
+        const d = new Date(parseInt(y), parseInt(m)-1, 1);
+        const label = d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+        return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:7px;gap:10px;">
+          <div style="font-size:12px;color:var(--text2);">${label}</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="font-size:13px;font-weight:800;color:var(--green-light);">+${Math.round(montant).toLocaleString('fr-FR')} €</div>
+            <button onclick="supprimerVersement('${moisKey}')" style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:14px;padding:0;line-height:1;">×</button>
+          </div>
+        </div>`;
+      }).join('');
+    }
+
+    // Barre progression réelle
+    const prog = document.getElementById('suivi-progress');
+    prog.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+        <div style="font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;">Progression réelle</div>
+        <div style="font-size:12px;font-weight:800;color:${pctTotal >= 100 ? 'var(--green-light)' : 'var(--gold-light)'};">${pctTotal}%</div>
+      </div>
+      <div style="height:8px;background:var(--border);border-radius:4px;overflow:hidden;margin-bottom:6px;">
+        <div style="height:100%;width:${pctTotal}%;background:${pctTotal >= 100 ? 'var(--green-light)' : 'linear-gradient(90deg,var(--gold-dark),var(--gold-light))'};border-radius:4px;transition:width .5s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text3);">
+        <span>Capital départ + versements : ${Math.round(totalAvecCapital).toLocaleString('fr-FR')} €</span>
+        <span>🎯 ${Math.round(data.cible).toLocaleString('fr-FR')} €</span>
+      </div>
+      ${pctTotal >= 100 ? `<div style="margin-top:10px;padding:10px 14px;background:rgba(75,186,122,0.1);border:1px solid rgba(75,186,122,0.3);border-radius:7px;font-size:12px;color:var(--green-light);font-weight:700;text-align:center;">🎉 Objectif atteint ! Tu peux maintenant passer à l'étape investissement.</div>` : ''}
+    `;
+  }
+
+  window.activerSuivi = function() {
+    const emailInput = document.getElementById('suivi-email');
+    const email = emailInput.value.trim();
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      document.getElementById('suivi-error').style.display = 'block';
+      return;
+    }
+    const capitalCustom = Math.max(0, parseInt(document.getElementById('suivi-capital-input').value) || 0);
+    const cibleCustom   = Math.max(100, parseInt(document.getElementById('suivi-cible-input').value) || 5000);
+    document.getElementById('suivi-error').style.display = 'none';
+    const data = getSuiviData(email);
+    data.capital = capitalCustom;
+    data.cible   = cibleCustom;
+    saveSuiviData(data);
+    try { localStorage.setItem('adc_suivi_last_email', email); } catch(e) {}
+    renderSuiviActif(email);
+  };
+
+  window.ajouterVersement = function() {
+    if (!_suiviEmail) return;
+    const moisKey = document.getElementById('suivi-mois-sel').value;
+    const montant = parseFloat(document.getElementById('suivi-montant').value);
+    if (!montant || montant <= 0) return;
+    const data = getSuiviData(_suiviEmail);
+    data.versements[moisKey] = (data.versements[moisKey] || 0) + montant;
+    saveSuiviData(data);
+    document.getElementById('suivi-montant').value = '';
+    rafraichirSuivi(data);
+  };
+
+  window.supprimerVersement = function(moisKey) {
+    if (!_suiviEmail) return;
+    const data = getSuiviData(_suiviEmail);
+    delete data.versements[moisKey];
+    saveSuiviData(data);
+    rafraichirSuivi(data);
+  };
+
+  // Vérifier si email déjà connu (localStorage)
+  try {
+    const saved = localStorage.getItem('adc_suivi_last_email');
+    if (saved) renderSuiviActif(saved);
+  } catch(e) {}
+
+  initSliders();
+}
+
+// ─── RENDER PRINCIPAL ────────────────────────────────────────────────────────
 function render() {
   const { prenom, capital, risque, objectif, personnage } = state;
+
+  // ── Parcours "débutant" : capital < 5 000 € (choix A ou B dans Typeform) ──
+  if (capital < 5000) {
+    renderEpargnePlan(prenom, capital, state.revenu, state.epargne);
+    return;
+  }
+
   const profil = PROFILS[personnage] || PROFILS['cdi'];
   const rates = RISQUE_RATES[risque];
   const obj = OBJECTIF_MAP[objectif];
