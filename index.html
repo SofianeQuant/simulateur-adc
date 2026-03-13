@@ -835,6 +835,16 @@ function render() {
         <div class="card-val" style="color:var(--gold-light)">${fmt(finalMid)}</div>
         <div class="card-sub">Placé à ${fmtPct(rates.mid)}/an, tes <strong style="color:#fff">${fmt(capital)}</strong> deviennent <strong style="color:#fff">${fmt(finalMid)}</strong> dans ${years} ans</div>
       </div>
+    </div>
+
+    <!-- Séparateur avec sous-titre -->
+    <div style="display:flex;align-items:center;gap:12px;margin:20px 0 16px;">
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,var(--border));"></div>
+      <div style="font-size:12px;font-weight:600;color:var(--text2);text-align:center;white-space:nowrap;padding:0 4px;">✨ Et si tu plaçais ton épargne mensuelle ?</div>
+      <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);"></div>
+    </div>
+
+    <div class="cards-grid">
       <div class="card">
         <div class="card-label">Épargne mensuelle placée</div>
         <div class="card-val green">${fmt(finalEpargne)} <span style="color:var(--text2);font-weight:700;">dans ${years} ans</span></div>
@@ -1176,16 +1186,16 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif) {
 
       <!-- KPIs top row -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
-        <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Revenus nets</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Revenus nets</div>
           <div style="font-size:20px;font-weight:800;color:#fff;">${Math.round(revenu).toLocaleString('fr-FR')} €</div>
         </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Apport disponible</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Apport dispo</div>
           <div style="font-size:20px;font-weight:800;color:#fff;">${Math.round(capital).toLocaleString('fr-FR')} €</div>
         </div>
-        <div>
-          <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:5px;">Taux endettement</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Taux d'endettement</div>
           <div style="font-size:20px;font-weight:800;color:${tauxEndetActuel > 30 ? 'var(--red)' : 'var(--gold-light)'};">${tauxEndetActuel.toFixed(1)}<span style="font-size:13px;font-weight:600;">%</span> <span style="font-size:12px;font-weight:500;color:var(--text3);">/ 35%</span></div>
         </div>
       </div>
