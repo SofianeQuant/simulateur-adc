@@ -759,6 +759,13 @@ function render() {
           <input type="number" class="adjust-input" id="inp-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="syncEpargneSlider(this)" onblur="applyEpargneInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
         </div>
       </div>
+      <div class="adjust-row">
+        <span class="adjust-label">Capital disponible <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— ce que tu es prêt à investir dès aujourd'hui</span></span>
+        <div class="adjust-slider-wrap">
+          <input type="range" class="adjust-slider" id="sl-capital" min="0" max="200000" step="500" value="${capital}" oninput="updateCapital(this)">
+          <input type="number" class="adjust-input" id="inp-capital" min="0" max="200000" step="500" value="${capital}" oninput="syncCapitalSlider(this)" onblur="applyCapitalInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
+      </div>
     </div>
 
     <!-- 1. BUDGET -->
@@ -980,7 +987,7 @@ function render() {
 }
 
 function initSliders() {
-  ['sl-revenu', 'sl-epargne'].forEach(id => {
+  ['sl-revenu', 'sl-epargne', 'sl-capital'].forEach(id => {
     const el = document.getElementById(id);
     if (el) updateSliderTrack(el);
   });
@@ -1059,6 +1066,31 @@ function applyEpargneInput(el) {
   el.value = v;
   state.epargne = v;
   const sl = document.getElementById('sl-epargne');
+  if (sl) { sl.value = v; updateSliderTrack(sl); }
+  rerender();
+}
+function updateCapital(el) {
+  updateSliderTrack(el);
+  state.capital = parseInt(el.value);
+  const inp = document.getElementById('inp-capital');
+  if (inp) inp.value = state.capital;
+  debouncedRerender();
+}
+function syncCapitalSlider(el) {
+  let v = parseInt(el.value);
+  if (!isNaN(v)) {
+    if (v > 200000) v = 200000;
+    const sl = document.getElementById('sl-capital');
+    if (sl) { sl.value = v; updateSliderTrack(sl); }
+  }
+}
+function applyCapitalInput(el) {
+  let v = parseInt(el.value) || 0;
+  if (v < 0) v = 0;
+  if (v > 200000) v = 200000;
+  el.value = v;
+  state.capital = v;
+  const sl = document.getElementById('sl-capital');
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   rerender();
 }
