@@ -1814,6 +1814,7 @@ function updateCredit(el) {
   if (inp) inp.value = state.creditEnCours;
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0, state.revenuConjoint||0);
+  updateSimURL();
 }
 function syncCreditSlider(el) {
   let v = parseInt(el.value);
@@ -1833,6 +1834,7 @@ function applyCreditInput(el) {
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0, state.revenuConjoint||0);
+  updateSimURL();
 }
 function updateLocatif(el) {
   updateSliderTrack(el);
@@ -1841,6 +1843,7 @@ function updateLocatif(el) {
   if (inp) inp.value = state.revenuLocatif;
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif);
+  updateSimURL();
 }
 function syncLocatifSlider(el) {
   let v = parseInt(el.value);
@@ -1860,6 +1863,7 @@ function applyLocatifInput(el) {
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif, state.revenuConjoint||0);
+  updateSimURL();
 }
 
 function updateConjoint(el) {
@@ -1869,6 +1873,7 @@ function updateConjoint(el) {
   state.revenuConjoint = parseInt(el.value);
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif||0, state.revenuConjoint);
+  updateSimURL();
 }
 function syncConjointSlider(el) {
   const sl = document.getElementById('sl-conjoint');
@@ -1881,6 +1886,7 @@ function applyConjointInput(el) {
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif||0, state.revenuConjoint);
+  updateSimURL();
 }
 
 function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif, revenuConjoint) {
@@ -2535,6 +2541,8 @@ function applyModif(force) {
   Object.values(charts).forEach(ch => { try { ch.destroy(); } catch(e){} });
   charts = {};
   render();
+  // updateSimURL après que render() ait fini (render a un setTimeout interne de 50ms)
+  setTimeout(() => { updateSimURL(); updateCalendlyLinks(); }, 150);
   // Re-inject panel after render (panel was wiped by render)
   setTimeout(() => {
     if (!document.getElementById('modifier-panel')) {
