@@ -1672,6 +1672,7 @@ function debouncedRerender() {
   _rerenderTimer = setTimeout(() => {
     rerender();
     updateSimURL();
+    setTimeout(() => updateCalendlyLinks(), 150);
   }, 300);
 }
 
@@ -1708,10 +1709,14 @@ function updateCalendlyLinks() {
 
 // MutationObserver — met à jour les liens Calendly dès qu'ils apparaissent dans le DOM
 (function initCalendlyObserver() {
+  let _obsTimer = null;
   const observer = new MutationObserver(() => {
-    if (document.querySelectorAll('a[href*="calendly"]').length > 0) {
+    if (_obsTimer) clearTimeout(_obsTimer);
+    _obsTimer = setTimeout(() => {
+      observer.disconnect(); // stop watching during update to avoid loop
       updateCalendlyLinks();
-    }
+      observer.observe(document.body, { childList: true, subtree: true }); // resume
+    }, 100);
   });
   observer.observe(document.body, { childList: true, subtree: true });
 })();
@@ -1814,7 +1819,7 @@ function updateCredit(el) {
   if (inp) inp.value = state.creditEnCours;
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0, state.revenuConjoint||0);
-  updateSimURL();
+  updateSimURL(); updateCalendlyLinks();
 }
 function syncCreditSlider(el) {
   let v = parseInt(el.value);
@@ -1843,7 +1848,7 @@ function updateLocatif(el) {
   if (inp) inp.value = state.revenuLocatif;
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif);
-  updateSimURL();
+  updateSimURL(); updateCalendlyLinks();
 }
 function syncLocatifSlider(el) {
   let v = parseInt(el.value);
@@ -1873,7 +1878,7 @@ function updateConjoint(el) {
   state.revenuConjoint = parseInt(el.value);
   const block = document.getElementById('immo-result-block');
   if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif||0, state.revenuConjoint);
-  updateSimURL();
+  updateSimURL(); updateCalendlyLinks();
 }
 function syncConjointSlider(el) {
   const sl = document.getElementById('sl-conjoint');
@@ -2582,7 +2587,74 @@ window.addEventListener('DOMContentLoaded', () => {
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
   state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne, creditEnCours: 0, revenuLocatif: 0 };
   render();
+
+  // ─── MAILERLITE AUTO-INSCRIPTION ─────────────────────────────────────────
+  // Déclenché uniquement si le lead arrive depuis Tally (source=tally dans l'URL)
+  // ou si email est passé en paramètre URL
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email');
+  const source = urlParams.get('source');
+
+  if (email && (source === 'tally' || urlParams.get('tally') === '1')) {
+    registerToMailerLite(email, parsed);
+  }
 });
+
+// ─── INSCRIPTION MAILERLITE DEPUIS LE SIMULATEUR ─────────────────────────────
+async function registerToMailerLite(email, data) {
+  // Clé API MailerLite — à remplacer par ta vraie clé depuis
+  // dashboard.mailerlite.com/integrations/api → Generate new token
+  const MAILERLITE_API_KEY = 'INSERE_TA_CLE_API_ICI';
+
+  // IDs des groupes MailerLite
+  const GROUPS = {
+    court:   '182024263602013505', // 1-6 mois
+    moyen:   '182024267133618164', // 7-12 mois
+    long:    '182024270374766345', // 13-24 mois
+    objectif:'182025250594096661', // objectif atteint
+  };
+
+  // Calcul de l'horizon
+  const capital  = parseInt(data.capital)  || 0;
+  const epargne  = parseInt(data.epargne)  || 1;
+  const objectif = parseInt(data.objectif) || 5000;
+  const manque   = Math.max(0, objectif - capital);
+  const horizon  = manque <= 0 ? 0 : Math.ceil(manque / epargne);
+
+  // Choix du groupe selon horizon
+  let groupId;
+  if (horizon <= 0)       groupId = GROUPS.objectif;
+  else if (horizon <= 6)  groupId = GROUPS.court;
+  else if (horizon <= 12) groupId = GROUPS.moyen;
+  else                    groupId = GROUPS.long;
+
+  // URL de simulation personnalisée
+  const simUrl = getSimUrl();
+
+  try {
+    await fetch('https://connect.mailerlite.com/api/subscribers', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + MAILERLITE_API_KEY,
+        'Accept': 'application/json'
+      },
+      body: JSON.stringify({
+        email: email,
+        fields: {
+          prenom:   data.prenom  || '',
+          capital:  capital,
+          epargne:  epargne,
+          objectif: objectif,
+          sim_url:  simUrl
+        },
+        groups: [groupId]
+      })
+    });
+  } catch(e) {
+    // Silencieux — ne pas bloquer l'expérience utilisateur
+  }
+}
 </script>
 </body>
 </html>
