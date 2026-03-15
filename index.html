@@ -78,11 +78,11 @@ body {
 
 /* HEADER */
 header {
-  padding: 32px 0 26px;
+  padding: 20px 0 16px;
   border-bottom: 1px solid var(--border);
   margin-bottom: 0;
   display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 16px;
+  flex-wrap: wrap; gap: 12px;
 }
 .header-right { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .header-badge {
@@ -107,16 +107,15 @@ header {
   background: linear-gradient(135deg, #1A1A0E 0%, #1C1C1E 100%);
   border: 1px solid rgba(200,150,62,0.35);
   border-top: 3px solid var(--gold);
-  border-radius: 12px; padding: 22px 24px;
+  border-radius: 12px; padding: 18px 20px;
   margin: 24px 0;
-  display: flex; align-items: center; justify-content: space-between;
-  flex-wrap: wrap; gap: 16px;
   position: relative; overflow: hidden;
 }
 .candidat-banner::before {
   content:''; position:absolute; top:-40px; right:-40px;
   width:180px; height:180px; border-radius:50%;
-  background: radial-gradient(circle, rgba(200,150,62,0.1) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(200,150,62,0.08) 0%, transparent 70%);
+  pointer-events:none;
 }
 .candidat-info h2 {
   font-size: 20px; font-weight: 800; color: #fff;
@@ -125,22 +124,55 @@ header {
   background: linear-gradient(90deg, var(--gold-light), var(--gold));
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
 }
-.candidat-tags { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+.candidat-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
 .tag {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: 6px; padding: 4px 10px; font-size: 11px; font-weight: 600;
-  color: var(--text2); letter-spacing: .04em;
+  color: var(--text2); letter-spacing: .03em; white-space: nowrap;
 }
 .tag.gold { border-color: rgba(200,150,62,0.4); color: var(--gold-light); background: rgba(200,150,62,0.08); }
 .tag.green { border-color: rgba(75,186,122,0.4); color: var(--green-light); background: rgba(75,186,122,0.08); }
 .score-box {
   text-align: center;
   background: rgba(0,0,0,0.3); border: 1px solid var(--border);
-  border-radius: 12px; padding: 16px 22px; min-width: 110px;
+  border-radius: 10px; padding: 12px 16px;
   flex-shrink: 0;
 }
 .score-val { font-size: 38px; font-weight: 900; line-height: 1; }
 .score-label { font-size: 10px; font-weight: 700; color: var(--text3); margin-top: 4px; letter-spacing: .1em; text-transform: uppercase; }
+
+/* Banner layout: desktop = side by side, mobile = stacked */
+.banner-inner {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+}
+.banner-score-mobile {
+  display: none;
+}
+@media (max-width: 540px) {
+  .banner-inner { flex-direction: column; align-items: stretch; gap: 10px; }
+  .score-box { display: none; }
+  .banner-score-mobile {
+    display: inline-flex; align-items: center; gap: 12px;
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 16px; margin-top: 10px;
+  }
+  .banner-score-mobile .score-num {
+    font-size: 36px; font-weight: 900; line-height: 1; flex-shrink: 0;
+  }
+  .banner-score-mobile .score-right {
+    display: flex; flex-direction: column; gap: 1px;
+  }
+  .banner-score-mobile .score-right .s-label {
+    font-size: 9px; font-weight: 700; color: var(--text3); letter-spacing: .12em; text-transform: uppercase;
+  }
+  .banner-score-mobile .score-right .s-sub {
+    font-size: 13px; font-weight: 700; color: var(--text2);
+  }
+  .candidat-banner { padding: 14px 16px; }
+  .score-val { font-size: 28px; }
+  .candidat-tags { gap: 5px; }
+  .tag { font-size: 10px; padding: 3px 8px; }
+}
 
 /* SECTION TITLES */
 .section-title {
@@ -216,7 +248,7 @@ header {
 
 /* CARDS GRID */
 .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-@media (max-width: 580px) { .cards-grid { grid-template-columns: 1fr; } }
+@media (max-width: 580px) { .cards-grid { grid-template-columns: 1fr; display: flex; flex-direction: column; } }
 
 .card {
   background: var(--bg2);
@@ -244,12 +276,18 @@ header {
 .chart-wrap { position: relative; height: 220px; }
 
 /* BUDGET BARS */
-.budget-bar-wrap { margin-bottom: 14px; }
-.budget-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 7px; flex-wrap: wrap; gap: 4px; }
-.budget-bar-label { font-size: 12px; font-weight: 500; color: var(--text2); flex-shrink: 0; }
-.budget-bar-val { font-size: 13px; font-weight: 700; color: var(--text); flex-shrink: 0; white-space: nowrap; }
-.budget-bar-track { height: 5px; background: var(--border); border-radius: 3px; overflow: hidden; }
+.budget-bar-wrap { margin-bottom: 10px; }
+.budget-bar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; gap: 4px; }
+.budget-bar-label { font-size: 12px; font-weight: 600; color: var(--text2); flex-shrink: 0; }
+.budget-bar-val { font-size: 12px; font-weight: 700; color: var(--text); flex-shrink: 0; white-space: nowrap; }
+.budget-bar-pct { font-size: 10px; font-weight: 600; color: var(--text3); margin-left: 6px; }
+.budget-bar-track { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
 .budget-bar-fill { height: 100%; border-radius: 3px; transition: width .5s ease; }
+.budget-donut-wrap { flex:1; min-width:180px; max-width:220px; margin:0 auto; position:relative; height:180px; }
+@media (max-width:580px) { .budget-donut-wrap { min-width:100%; max-width:260px; height:240px; margin:16px auto 0; } }
+@media (max-width:540px) { .budget-donut-desktop { display:none !important; } }
+.immo-toggle-arrow { display:none; }
+@media (max-width:600px) { .immo-toggle-arrow { display:inline; } }
 
 /* RANGE BAR */
 .range-bar {
@@ -276,7 +314,7 @@ header {
 }
 .insight-icon { font-size: 17px; flex-shrink: 0; margin-top: 1px; }
 .insight-text { font-size: 13px; color: var(--text2); line-height: 1.6; }
-.insight-text strong { color: #fff; font-weight: 700; }
+.insight-text strong { color: #fff; font-weight: 800; font-size: 14px; }
 .insight.good { border-color: rgba(75,186,122,0.25); background: rgba(75,186,122,0.04); }
 .insight.warn { border-color: rgba(200,150,62,0.25); background: rgba(200,150,62,0.04); }
 .insight.info { border-color: rgba(74,143,232,0.2); background: rgba(74,143,232,0.04); }
@@ -288,7 +326,7 @@ header {
   background: var(--bg2); border: 1px solid var(--border);
   border-radius: 10px; padding: 16px;
 }
-.reco-card h5 { font-size: 12px; font-weight: 700; color: var(--gold-light); margin-bottom: 6px; }
+.reco-card h5 { font-size: 13px; font-weight: 800; color: #fff; margin-bottom: 6px; }
 .reco-card p { font-size: 12px; color: var(--text2); line-height: 1.6; }
 
 /* CTA FINAL */
@@ -312,17 +350,24 @@ header {
 }
 .cta-section p { font-size: 14px; color: var(--text2); margin-bottom: 22px; line-height: 1.6; max-width: 540px; margin-left: auto; margin-right: auto; }
 .cta-btn {
-  display: inline-block;
+  display: block;
   background: linear-gradient(135deg, var(--gold-dark), var(--gold-light));
-  color: #111; font-weight: 800; font-size: 14px; font-family: 'DM Sans', sans-serif;
-  padding: 14px 32px; border-radius: 10px; text-decoration: none;
+  color: #111; font-weight: 800; font-size: 15px; font-family: 'DM Sans', sans-serif;
+  padding: 16px 24px; border-radius: 10px; text-decoration: none;
   transition: transform .2s, box-shadow .2s;
   box-shadow: 0 4px 24px rgba(200,150,62,0.35);
-  letter-spacing: .03em;
+  letter-spacing: .02em;
+  white-space: nowrap;
+  text-align: center;
+  width: 100%;
+  box-sizing: border-box;
 }
 .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 32px rgba(200,150,62,0.5); }
-.cta-urgence { font-size: 11px; color: var(--text3); margin-top: 14px; }
+.cta-urgence { font-size: 11px; color: var(--text3); margin-top: 12px; text-align: center; }
 .cta-urgence span { color: var(--green-light); font-weight: 700; }
+@media (max-width: 540px) {
+  .cta-urgence { font-size: 10px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+}
 
 /* DIVIDER */
 .divider { height: 1px; background: var(--border); margin: 8px 0; }
@@ -330,9 +375,11 @@ header {
 
 /* LOGO IMAGE REAL */
 .logo-img-real {
-  height: 40px; width: auto; object-fit: contain;
-  background: #fff; border-radius: 9px; padding: 6px 12px;
-  box-shadow: 0 2px 16px rgba(200,150,62,.2), 0 0 0 1px rgba(200,150,62,.15);
+  height: 80px;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  box-shadow: none;
   display: block;
 }
 
@@ -368,13 +415,37 @@ header {
 /* MOBILE OVERFLOW FIX */
 @media (max-width: 600px) {
   .wrap { padding: 0 12px 80px; }
-  .candidat-banner { padding: 16px; }
-  .score-box { min-width: 90px; padding: 12px 14px; }
-  .score-val { font-size: 28px; }
   .candidat-info h2 { font-size: 17px; }
   .chart-box { padding: 14px; }
-  header { padding: 20px 0 16px; }
-  .header-right { gap: 8px; }
+  header {
+    padding: 14px 0 12px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: nowrap;
+  }
+  .logo-lockup {
+    background: transparent;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: none;
+    margin-bottom: 0;
+    flex-shrink: 0;
+    width: 100%;
+  }
+  .logo-img-real {
+    height: 80px !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+  }
+  .header-right { gap: 8px; flex-wrap: nowrap; justify-content: center; flex-shrink: 0; width: 100%; }
+  .header-badge { font-size: 11px; padding: 6px 12px; }
+  .print-btn { font-size: 11px; padding: 6px 12px; }
   .print-btn { font-size: 11px; padding: 7px 12px; }
   .card-val { font-size: 22px; }
   /* Forcer toutes les cartes en colonne */
@@ -635,10 +706,38 @@ function scorePatrimoine(capital, revenu, epargne, tauxEpargne) {
 let state = {};
 let charts = {};
 
+// ─── SYNC URL (snapshot simulation) ─────────────────────────────────────────
+function updateSimURL() {
+  if (!state.prenom) return;
+  const params = new URLSearchParams(window.location.search);
+  params.set('prenom', state.prenom);
+  params.set('capital', state.capital);
+  params.set('revenu', state.revenu);
+  params.set('epargne', state.epargne);
+  if (state.creditEnCours) params.set('credit', state.creditEnCours);
+  if (state.revenuLocatif) params.set('locatif', state.revenuLocatif);
+  if (state.revenuConjoint) params.set('conjoint', state.revenuConjoint);
+  params.set('risque', state.risque);
+  params.set('objectif', state.objectif);
+  params.set('personnage', state.personnage);
+  try {
+    const newURL = window.location.pathname + '?' + params.toString();
+    window.history.replaceState({}, '', newURL);
+  } catch(e) {
+    // Environnement iframe/srcdoc — on ignore silencieusement
+  }
+}
+
+function copySimLink() {
+  updateSimURL();
+  updateCalendlyLinks();
+}
+
 const EBOOK_URL   = 'https://drive.google.com/file/d/1uhUf_NzdhNdwtrXVp1emWcVmPvOCJguU/view?usp=sharing';
 const CALENDLY_URL = 'https://calendly.com/sofianedidi15/un-investisseur-presque-parfait';
 
-function ctaConfig(capital) {
+function ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom) {
+  const fmt = n => Math.round(n).toLocaleString('fr-FR') + ' €';
   if (capital < 5000) {
     return {
       url:        EBOOK_URL,
@@ -649,13 +748,16 @@ function ctaConfig(capital) {
       badges:     '<span style="color:var(--green-light);font-weight:700;">✅ 100% gratuit · Aucun engagement</span><span style="color:var(--text3);">📖 Guide PDF · Téléchargement immédiat</span>',
     };
   }
+  const nom = prenom && prenom !== 'Vous' ? prenom : null;
   return {
     url:        CALENDLY_URL,
     btnLabel:   '📅 Réserver mon Audit Gratuit →',
     midLabel:   '📅 Prendre RDV gratuitement →',
-    h3:         'Transformez cette analyse en <span>stratégie concrète</span>',
-    desc:       'Votre simulation révèle un potentiel réel. Lors de votre <strong>Audit Patrimonial Gratuit (30 min)</strong>, Alexandre Da Costa analyse votre situation en détail, identifie vos leviers fiscaux et co-construit votre feuille de route personnalisée.',
-    badges:     '<span style="color:var(--green-light);font-weight:700;">✅ 100% offert, sans engagement</span><span style="color:var(--text3);">⚡ Réponse sous 24h</span>',
+    h3:         nom
+      ? `${nom}, <span>ton patrimoine peut atteindre ${fmt(finalWithEpargne)}</span>`
+      : `Ton patrimoine peut atteindre <span>${fmt(finalWithEpargne)}</span>`,
+    desc:       `Avec <strong>${fmt(capital)}</strong> investis et <strong>${fmt(epargne)}/mois</strong> d'épargne, ton score patrimonial est de <strong>${score}/100</strong>. Lors de ton <strong>Audit Gratuit (30 min)</strong>, Alexandre identifie les leviers fiscaux pour dépasser cette projection — PEA, assurance-vie, LMNP, structuration.`,
+    badges:     '<span style="color:var(--green-light);font-weight:700;">✅ 100% offert</span><span style="color:var(--text3);"> · Sans engagement · ⚡ Sous 24h</span>',
   };
 }
 
@@ -720,21 +822,25 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
       </div>
     </div>
 
+
+    <!-- PLAN visible directement -->
+    <div id="plan-content" style="display:block;">
+
     <!-- INTRO -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:20px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">🌱 Ta situation actuelle</div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
           <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Capital actuel</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;">${fmt(capital)}</div>
+          <div style="font-size:20px;font-weight:800;color:#fff;white-space:nowrap;">${fmt(capital)}</div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
           <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Épargne / mois</div>
-          <div style="font-size:20px;font-weight:800;color:var(--green-light);">${fmt(epargne)}</div>
+          <div style="font-size:20px;font-weight:800;color:var(--green-light);white-space:nowrap;">${fmt(epargne)}</div>
         </div>
         <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
           <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Objectif cible</div>
-          <div style="font-size:20px;font-weight:800;color:var(--gold-light);">${fmt(cible)}</div>
+          <div style="font-size:20px;font-weight:800;color:var(--gold-light);white-space:nowrap;">${fmt(cible)}</div>
         </div>
       </div>
       ${manque > 0 ? `<div style="font-size:13px;color:var(--text2);line-height:1.6;">Il te manque <strong style="color:#fff">${fmt(manque)}</strong> pour atteindre les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> — le seuil à partir duquel les vraies stratégies d'investissement s'ouvrent. Voici ton plan.</div>` : `<div style="font-size:13px;color:var(--green-light);font-weight:700;">✅ Tu es déjà au seuil des ${fmt(cible)} — tu peux passer à l'étape supérieure.</div>`}
@@ -747,23 +853,33 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
       <div class="section-line"></div>
     </div>
 
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
       ${horizons.map((h, i) => {
         const colors = ['var(--gold-light)', 'var(--green-light)', '#8bbef0'];
-        const borders = ['rgba(212,175,55,0.3)', 'rgba(75,186,122,0.3)', 'rgba(74,143,232,0.3)'];
-        const bgs = ['rgba(212,175,55,0.06)', 'rgba(75,186,122,0.05)', 'rgba(74,143,232,0.05)'];
+        const borders = ['rgba(212,175,55,0.3)', 'rgba(75,186,122,0.45)', 'rgba(74,143,232,0.3)'];
+        const bgs = ['rgba(212,175,55,0.06)', 'rgba(75,186,122,0.07)', 'rgba(74,143,232,0.05)'];
         const faisable = h.besoin <= epargne;
+        const isRecommended = i === 1;
         return `
-        <div style="background:${bgs[i]};border:1px solid ${borders[i]};border-radius:10px;padding:16px 14px;display:flex;flex-direction:column;gap:6px;">
-          <div style="font-size:11px;font-weight:700;color:${colors[i]};text-transform:uppercase;letter-spacing:.08em;">En ${h.label}</div>
-          <div style="font-size:22px;font-weight:800;color:#fff;">${fmt(h.besoin)}<span style="font-size:13px;color:var(--text3);font-weight:500;">/mois</span></div>
-          <div style="font-size:10px;color:var(--text3);">${h.taux}% de tes revenus</div>
-          <div style="margin-top:4px;font-size:11px;font-weight:700;color:${faisable ? 'var(--green-light)' : 'var(--gold-light)'};">
-            ${faisable ? '✅ Dans tes cordes' : '⚡ Effort à faire'}
+        <div style="background:${bgs[i]};border:${isRecommended ? '2px' : '1px'} solid ${borders[i]};border-radius:12px;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;${isRecommended ? 'box-shadow:0 0 20px rgba(75,186,122,0.12);' : ''}">
+          <div style="flex:1;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+              <span style="font-size:11px;font-weight:700;color:${colors[i]};text-transform:uppercase;letter-spacing:.08em;">En ${h.label}</span>
+              ${isRecommended ? '<span style="font-size:9px;font-weight:700;background:rgba(75,186,122,0.2);color:var(--green-light);border-radius:4px;padding:2px 6px;letter-spacing:.06em;">RECOMMANDÉ</span>' : ''}
+            </div>
+            <div style="font-size:10px;color:var(--text3);">${h.taux}% de tes revenus</div>
+            <div style="font-size:10px;color:var(--text3);margin-top:3px;font-style:italic;">à mettre de côté chaque mois</div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;">
+            <div style="font-size:26px;font-weight:900;color:#fff;line-height:1;white-space:nowrap;">${fmt(h.besoin)}<span style="font-size:12px;color:var(--text3);font-weight:500;">/mois</span></div>
+            <div style="margin-top:4px;font-size:11px;font-weight:700;color:${faisable ? 'var(--green-light)' : 'var(--gold-light)'};">
+              ${faisable ? '✅ Dans tes cordes' : '⚡ Effort à faire'}
+            </div>
           </div>
         </div>`;
       }).join('')}
     </div>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin:-12px 0 16px;font-style:italic;">💡 Ces montants sont à épargner chaque mois — pas un abonnement.</div>
 
     <!-- BARRE DE PROGRESSION VERS 5K -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:16px 18px;margin-bottom:20px;">
@@ -889,15 +1005,30 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     </div>
 
     <!-- MESSAGE FINAL -->
-    <div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(75,186,122,0.04));border:1px solid rgba(212,175,55,0.2);border-radius:12px;padding:20px 22px;text-align:center;">
-      <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;">Tu es au début du chemin — et c'est le meilleur moment 🚀</div>
-      <div style="font-size:12px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto;">
-        Une fois les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> atteints, ce simulateur te montrera comment les faire travailler : ETF, immobilier, assurance-vie… Reviens à ce moment-là — ou contacte-nous pour construire un plan sur-mesure dès maintenant.
+    <div style="background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(75,186,122,0.04));border:1px solid rgba(212,175,55,0.2);border-radius:12px;padding:20px 22px;">
+      <div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:8px;text-align:center;">Tu es au début du chemin — c'est le meilleur moment 🚀</div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.7;max-width:480px;margin:0 auto 16px;text-align:center;">
+        Une fois les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> atteints, ce simulateur te montrera comment les faire travailler : ETF, immobilier, assurance-vie… Reviens à ce moment-là.
       </div>
-      <div style="margin-top:16px;font-size:11px;color:var(--text3);">
+
+      <!-- Avis -->
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:10px 12px;">
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px;">"Son approche personnalisée m'a aidé à atteindre mes objectifs financiers plus rapidement que je ne l'imaginais."</div>
+          <div style="font-size:10px;color:var(--text3);">Lucas Girard · Finance Manager &nbsp; <span style="color:var(--gold-light);">★★★★★</span></div>
+        </div>
+        <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:10px 12px;">
+          <div style="font-size:11px;color:var(--text2);line-height:1.5;margin-bottom:4px;">"ADC Patrimoine a transformé mes finances grâce à des stratégies sur mesure."</div>
+          <div style="font-size:10px;color:var(--text3);">Hugo Lefèvre · Investisseur &nbsp; <span style="color:var(--gold-light);">★★★★★</span></div>
+        </div>
+      </div>
+
+      <div style="text-align:center;font-size:11px;color:var(--text3);">
         ✅ 100% offert · ⚡ Réponse sous 24h
       </div>
     </div>
+
+    </div><!-- fin #plan-content -->
 
   `;
   // ── Générer le tableau mois par mois ──
@@ -943,7 +1074,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     </div>
     ${rows}`;
   };
-  document.getElementById('tracker-table').innerHTML = buildTracker(12);
+  // tracker-table initialisé dans debloquerPlan (après gate email)
 
   // ── SUIVI EMAIL ──
   const STORAGE_KEY_PREFIX = 'adc_suivi_';
@@ -1074,11 +1205,9 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     rafraichirSuivi(data);
   };
 
-  // Vérifier si email déjà connu (localStorage)
-  try {
-    const saved = localStorage.getItem('adc_suivi_last_email');
-    if (saved) renderSuiviActif(saved);
-  } catch(e) {}
+  // ── Initialisation directe du tracker (plus de gate email) ──
+  if (document.getElementById('tracker-table'))
+    document.getElementById('tracker-table').innerHTML = buildTracker(12);
 
   initSliders();
 }
@@ -1159,24 +1288,55 @@ function render() {
 
     <!-- CANDIDAT BANNER -->
     <div class="candidat-banner">
-      <div class="candidat-info">
-        <h2>${profil.emoji} <span>${prenom}</span></h2>
-        <div class="candidat-tags">
-          <span class="tag gold">${profil.label}</span>
-          <span class="tag">${obj.label}</span>
-          <span class="tag">${risque === 'faible' ? '🛡️ Prudent' : risque === 'elevee' ? '🚀 Dynamique' : '⚖️ Équilibré'}</span>
-          <span class="tag green">Capital : ${fmt(capital)}</span>
+      <div class="banner-inner">
+        <div class="candidat-info">
+          <h2>${profil.emoji} <span>${prenom}</span></h2>
+          <div class="candidat-tags">
+            <span class="tag gold">${profil.label}</span>
+            <span class="tag">${obj.label.replace('Performance long terme','Perf. long terme').replace('Stabilité et revenu','Stabilité revenu').replace('Sécurité du capital','Sécurité')}</span>
+            <span class="tag">${risque === 'faible' ? 'Prudent' : risque === 'elevee' ? 'Dynamique' : 'Équilibré'}</span>
+            <span class="tag green">${fmt(capital)}</span>
+          </div>
+          <!-- Score version mobile (horizontal) -->
+          <div class="banner-score-mobile">
+            <div class="score-num" style="color:${scoreColor}">${score}</div>
+            <div class="score-right">
+              <div class="s-label">Score Patrimoine</div>
+              <div class="s-sub">${score >= 70 ? 'Optimisé' : score >= 40 ? 'À développer' : 'En construction'} <span style="color:var(--text3);font-weight:400;font-size:11px;">/ 100</span></div>
+            </div>
+          </div>
+        </div>
+        <!-- Score version desktop (vertical box) -->
+        <div class="score-box">
+          <div class="score-val" style="color:${scoreColor}">${score}</div>
+          <div class="score-label">Score Patrimoine</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">${score >= 70 ? 'Optimisé' : score >= 40 ? 'À développer' : 'En construction'}</div>
         </div>
       </div>
-      <div class="score-box">
-        <div class="score-val" style="color:${scoreColor}">${score}</div>
-        <div class="score-label">Score Patrimoine</div>
+    </div>
+    ${score < 80 ? `
+    <div style="background:rgba(200,150,62,0.06);border:1px solid rgba(200,150,62,0.18);border-radius:8px;padding:10px 14px;margin:10px 0 0;" id="leviers-block">
+      <div style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;" onclick="var c=document.getElementById('leviers-content');var a=document.getElementById('leviers-arrow');if(c.style.display==='none'){c.style.display='flex';a.style.transform='rotate(180deg)'}else{c.style.display='none';a.style.transform='rotate(0deg)'}">
+        <div style="font-size:10px;font-weight:700;color:var(--gold-light);text-transform:uppercase;letter-spacing:.08em;">🎯 Passer à ${Math.min(score + 20, 100)}/100 — les 3 leviers clés</div>
+        <span id="leviers-arrow" style="color:var(--text3);font-size:12px;transition:transform .2s;">▼</span>
       </div>
+      <div id="leviers-content" style="display:none;flex-direction:column;gap:4px;margin-top:8px;">
+        ${score < 40 || tauxEpargne < 0.10 ? `<div style="font-size:11px;color:var(--text2);">📈 Épargner <strong style="color:#fff">${fmt(revenu * 0.15)}/mois</strong> (15% revenus) → +15 pts</div>` : ''}
+        ${capital < 20000 ? `<div style="font-size:11px;color:var(--text2);">💰 Atteindre <strong style="color:#fff">${fmt(Math.max(capital * 2, 20000))}</strong> de capital → +16 pts</div>` : ''}
+        <div style="font-size:11px;color:var(--text2);">🏦 Structurer via PEA + Assurance-vie → optimisation fiscale immédiate</div>
+      </div>
+    </div>` : ''}
+
+    <!-- MICRO-CTA sous score -->
+    <div style="margin:12px 0 0;text-align:center;">
+      <a href="${CALENDLY_URL}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--gold-light);text-decoration:none;padding:8px 16px;border:1px solid rgba(200,150,62,0.3);border-radius:20px;background:rgba(200,150,62,0.07);transition:all .2s;" onmouseover="this.style.background='rgba(200,150,62,0.15)'" onmouseout="this.style.background='rgba(200,150,62,0.07)'">
+        📅 Prendre RDV gratuitement →
+      </a>
     </div>
 
-    <!-- AJUSTEMENTS -->
-    <div class="adjust-section">
-      <h4>⚙️ Ajuster les données <span class="adjust-badge">Optionnel — affiner lors de l'audit</span></h4>
+    <!-- AJUSTEMENTS toujours visibles -->
+    <div class="adjust-section" style="margin-top:16px;">
+      <h4>⚙️ Affiner mes données <span class="adjust-badge">Optionnel</span></h4>
       <div class="adjust-row">
         <span class="adjust-label">Revenus nets / mois</span>
         <div class="adjust-slider-wrap">
@@ -1185,14 +1345,14 @@ function render() {
         </div>
       </div>
       <div class="adjust-row">
-        <span class="adjust-label">Épargne mensuelle <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— ce que tu peux mettre de côté chaque mois</span></span>
+        <span class="adjust-label">Épargne mensuelle</span>
         <div class="adjust-slider-wrap">
           <input type="range" class="adjust-slider" id="sl-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="updateEpargne(this)">
           <input type="number" class="adjust-input" id="inp-epargne" min="0" max="8000" step="50" value="${epargne}" oninput="syncEpargneSlider(this)" onblur="applyEpargneInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
         </div>
       </div>
       <div class="adjust-row">
-        <span class="adjust-label">Capital disponible <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— ce que tu es prêt à investir dès aujourd'hui</span></span>
+        <span class="adjust-label">Capital disponible</span>
         <div class="adjust-slider-wrap">
           <input type="range" class="adjust-slider" id="sl-capital" min="0" max="200000" step="500" value="${capital}" oninput="updateCapital(this)">
           <input type="number" class="adjust-input" id="inp-capital" min="0" max="200000" step="500" value="${capital}" oninput="syncCapitalSlider(this)" onblur="applyCapitalInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
@@ -1208,44 +1368,57 @@ function render() {
     </div>
 
     <div class="cards-grid">
-      <div class="card">
+      <div class="card" style="order:1;">
         <div class="card-label">Revenus mensuels nets</div>
         <div class="card-val">${fmt(revenu)}</div>
         <div class="card-sub">Estimation profil ${profil.label}</div>
       </div>
-      <div class="card">
+      <div class="card" style="order:3;">
         <div class="card-label">Capacité d'épargne</div>
         <div class="card-val green">${fmt(epargne)}</div>
         <div class="card-sub">Ce que tu mets de côté chaque mois · ${fmtPct(tauxEpargne)} des revenus · ${tauxEpargne >= 0.15 ? '✅ Excellent' : tauxEpargne >= 0.08 ? '👍 Bien' : '⚠️ À optimiser'}</div>
       </div>
-      <div class="card">
+      <div class="card" style="order:2;">
         <div class="card-label">Dépenses mensuelles</div>
         <div class="card-val">${fmt(depenses)}</div>
         <div class="card-sub">Ex : loyer, gaz, eau, élec, crédit voiture…</div>
       </div>
-      <div class="card">
+      <div class="card" style="order:4;">
         <div class="card-label">Épargne annuelle</div>
         <div class="card-val green">${fmt(epargne * 12)}</div>
         <div class="card-sub">${fmt(epargne)}/mois × 12 mois = effort d'investissement annuel</div>
       </div>
     </div>
 
-    <div class="chart-box" style="margin-top:12px">
-      <h4>Répartition budget mensuel</h4>
-      <div style="display:flex;gap:16px;flex-wrap:wrap">
-        <div style="flex:1;min-width:0;padding-top:8px">
-          <div class="budget-bar-wrap">
-            <div class="budget-bar-header"><span class="budget-bar-label">Dépenses courantes</span><span class="budget-bar-val">${fmt(depenses)}</span></div>
-            <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(depenses/revenu*100).toFixed(0)}%;background:var(--blue)"></div></div>
-          </div>
-          <div class="budget-bar-wrap" style="margin-top:8px">
-            <div class="budget-bar-header"><span class="budget-bar-label">Épargne investie</span><span class="budget-bar-val" style="color:var(--green-light)">${fmt(epargne)}</span></div>
-            <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(tauxEpargne*100).toFixed(0)}%;background:var(--green-light)"></div></div>
-          </div>
+    <div class="chart-box" style="margin-top:12px;padding:14px 16px;">
+      <div style="text-align:center;margin-bottom:14px;">
+        <h4 style="margin:0 0 2px;">Répartition budget mensuel</h4>
+        <span style="font-size:13px;font-weight:800;color:#fff;">${fmt(revenu)}<span style="color:var(--text3);font-weight:500;">/mois</span></span>
+      </div>
+      <div class="budget-bar-wrap">
+        <div class="budget-bar-header">
+          <span class="budget-bar-label">Dépenses courantes</span>
+          <span class="budget-bar-val">${fmt(depenses)} <span class="budget-bar-pct">${(depenses/revenu*100).toFixed(0)}%</span></span>
         </div>
-        <div style="flex:1;min-width:0;position:relative;height:160px">
-          <canvas id="chart-budget"></canvas>
+        <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(depenses/revenu*100).toFixed(0)}%;background:var(--blue)"></div></div>
+      </div>
+      <div class="budget-bar-wrap">
+        <div class="budget-bar-header">
+          <span class="budget-bar-label">Épargne investie</span>
+          <span class="budget-bar-val" style="color:var(--green-light)">${fmt(epargne)} <span class="budget-bar-pct">${(tauxEpargne*100).toFixed(0)}%</span></span>
         </div>
+        <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${(tauxEpargne*100).toFixed(0)}%;background:var(--green-light)"></div></div>
+      </div>
+      ${(revenu - depenses - epargne) > 0 ? `
+      <div class="budget-bar-wrap" style="margin-bottom:0;">
+        <div class="budget-bar-header">
+          <span class="budget-bar-label">Reste disponible</span>
+          <span class="budget-bar-val" style="color:var(--text3)">${fmt(revenu - depenses - epargne)} <span class="budget-bar-pct">${((revenu-depenses-epargne)/revenu*100).toFixed(0)}%</span></span>
+        </div>
+        <div class="budget-bar-track"><div class="budget-bar-fill" style="width:${((revenu-depenses-epargne)/revenu*100).toFixed(0)}%;background:var(--border)"></div></div>
+      </div>` : ''}
+      <div class="budget-donut-wrap budget-donut-desktop" style="margin-top:12px;">
+        <canvas id="chart-budget"></canvas>
       </div>
     </div>
 
@@ -1276,7 +1449,7 @@ function render() {
       <div style="flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);"></div>
     </div>
 
-    <div class="cards-grid">
+    <div class="cards-grid" style="margin-bottom:16px;">
       <div class="card">
         <div class="card-label">Épargne mensuelle placée</div>
         <div class="card-val green">${fmt(finalEpargne)} <span style="color:var(--text2);font-weight:700;">dans ${years} ans</span></div>
@@ -1289,7 +1462,7 @@ function render() {
       </div>
     </div>
 
-    <div class="chart-box">
+    <div class="chart-box" style="margin-top:16px;">
       <h4>Évolution du patrimoine (capital + épargne mensuelle)</h4>
       <div class="chart-wrap">
         <canvas id="chart-wealth"></canvas>
@@ -1299,13 +1472,11 @@ function render() {
       </div>
     </div>
 
-    <!-- MID CTA -->
-    <div style="background:linear-gradient(135deg,rgba(200,150,62,0.08),rgba(200,150,62,0.04));border:1px solid rgba(200,150,62,0.25);border-radius:12px;padding:20px 24px;margin:24px 0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
-      <div>
-        <p style="font-size:14px;font-weight:700;color:#fff;margin-bottom:4px;">💡 Ces chiffres vous surprennent ?</p>
-        <p style="font-size:12px;color:var(--text2);">Un audit patrimonial gratuit permet de valider et personnaliser ces projections avec un expert.</p>
-      </div>
-      <a href="${CALENDLY_URL}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:11px 22px;border-radius:9px;text-decoration:none;white-space:nowrap;transition:transform .2s;box-shadow:0 3px 16px rgba(200,150,62,0.3);">📅 Prendre RDV gratuitement →</a>
+    <!-- MID CTA — placé haut pour conversion maximale -->
+    <div style="background:linear-gradient(135deg,rgba(200,150,62,0.08),rgba(200,150,62,0.04));border:1px solid rgba(200,150,62,0.25);border-radius:12px;padding:16px 18px;margin:20px 0 0;">
+      <p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">💡 ${fmt(finalWithEpargne)} dans ${years} ans — on peut faire mieux ensemble</p>
+      <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Avec ${fmt(capital)} investis et ${fmt(epargne)}/mois, Alexandre identifie les leviers fiscaux pour optimiser cette projection.</p>
+      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;">📅 Réserver mon Audit Gratuit →</a>
     </div>
 
     <!-- 3. INTÉRÊTS COMPOSÉS -->
@@ -1330,33 +1501,44 @@ function render() {
       </div>
     </div>
 
-    <!-- 4. CAPACITÉ IMMO -->
-    <div class="section-title">
+    <!-- 4. CAPACITÉ IMMO — collapsible par défaut sur mobile -->
+    <div class="section-title" style="cursor:pointer;margin-bottom:4px;" onclick="var p=document.getElementById('immo-panel');var a=document.getElementById('immo-arrow');var h=document.getElementById('immo-hint');if(p.style.display==='none'){p.style.display='block';a.textContent='▲';if(h)h.style.display='none'}else{p.style.display='none';a.textContent='▼';if(h)h.style.display='block'}">
       <div class="section-num">4</div>
       <h3>Capacité d'emprunt immobilier</h3>
+      <span id="immo-arrow" style="color:var(--text3);font-size:11px;margin-left:auto;flex-shrink:0;" class="immo-toggle-arrow">▼</span>
       <div class="section-line"></div>
     </div>
+    <div id="immo-hint" style="font-size:11px;color:var(--text3);font-weight:500;margin:-4px 0 14px 44px;cursor:pointer;" onclick="var p=document.getElementById('immo-panel');var a=document.getElementById('immo-arrow');var h=document.getElementById('immo-hint');if(p.style.display==='none'){p.style.display='block';a.textContent='▲';h.style.display='none'}">👆 Appuie pour simuler ta capacité d'emprunt</div>
 
+    <div id="immo-panel" style="display:none;">
     <div class="adjust-section">
       <h4>🏦 Données financières <span class="adjust-badge">Pour le calcul bancaire</span></h4>
       <div class="adjust-row">
         <span class="adjust-label">Crédits en cours / mois <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— auto, conso, crédit immo existant…</span></span>
         <div class="adjust-slider-wrap">
           <input type="range" class="adjust-slider" id="sl-credit" min="0" max="2000" step="50" value="${state.creditEnCours||0}" oninput="updateCredit(this)">
-          <input type="number" class="adjust-input" id="inp-credit" min="0" max="2000" step="50" value="${state.creditEnCours||0}" oninput="syncCreditSlider(this)" onblur="applyCreditInput(this)" onkeydown="if(event.key===\'Enter\'){this.blur()}">
+          <input type="number" class="adjust-input" id="inp-credit" min="0" max="2000" step="50" value="${state.creditEnCours||0}" oninput="syncCreditSlider(this)" onblur="applyCreditInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
         </div>
       </div>
       <div class="adjust-row">
         <span class="adjust-label">Revenus locatifs / mois <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— loyers perçus (pris à 70% par les banques)</span></span>
         <div class="adjust-slider-wrap">
           <input type="range" class="adjust-slider" id="sl-locatif" min="0" max="5000" step="50" value="${state.revenuLocatif||0}" oninput="updateLocatif(this)">
-          <input type="number" class="adjust-input" id="inp-locatif" min="0" max="5000" step="50" value="${state.revenuLocatif||0}" oninput="syncLocatifSlider(this)" onblur="applyLocatifInput(this)" onkeydown="if(event.key===\'Enter\'){this.blur()}">
+          <input type="number" class="adjust-input" id="inp-locatif" min="0" max="5000" step="50" value="${state.revenuLocatif||0}" oninput="syncLocatifSlider(this)" onblur="applyLocatifInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
+        </div>
+      </div>
+      <div class="adjust-row">
+        <span class="adjust-label">Revenus conjoint / mois <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0;">— pris en compte dans le calcul bancaire</span></span>
+        <div class="adjust-slider-wrap">
+          <input type="range" class="adjust-slider" id="sl-conjoint" min="0" max="10000" step="100" value="${state.revenuConjoint||0}" oninput="updateConjoint(this)">
+          <input type="number" class="adjust-input" id="inp-conjoint" min="0" max="10000" step="100" value="${state.revenuConjoint||0}" oninput="syncConjointSlider(this)" onblur="applyConjointInput(this)" onkeydown="if(event.key==='Enter'){this.blur()}">
         </div>
       </div>
     </div>
 
     <div id="immo-result-block">
       ${renderImmoBlock(revenu, state.creditEnCours||0, capital, state.revenuLocatif||0)}
+    </div>
     </div>
 
     <!-- INSIGHTS -->
@@ -1372,13 +1554,64 @@ function render() {
       <div class="reco-grid" id="reco-box"></div>
     </div>
 
-    <!-- CTA INSIGHTS -->
+    <!-- PREUVE SOCIALE — avant le CTA pour conversion optimale -->
+    <div style="margin:16px 0 0;padding:16px 18px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;">
+      <div style="display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:12px;">
+        <span style="font-size:12px;color:var(--gold-light);">★★★★★</span>
+        <span style="font-size:11px;font-weight:700;color:var(--text2);">+200 clients accompagnés</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="border-left:3px solid var(--gold-dark);padding:8px 12px;background:var(--bg3);border-radius:0 6px 6px 0;">
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:5px;font-style:italic;">"Une véritable révolution pour mon portefeuille immobilier et financier."</div>
+          <div style="font-size:11px;font-weight:700;color:var(--gold-light);">Jules M. <span style="color:var(--text3);font-weight:400;font-style:normal;">· Propriétaire d'entreprise</span></div>
+        </div>
+        <div style="border-left:3px solid rgba(255,255,255,0.2);padding:8px 12px;background:var(--bg3);border-radius:0 6px 6px 0;">
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:5px;font-style:italic;">"Mes objectifs financiers atteints plus rapidement que je ne l'imaginais."</div>
+          <div style="font-size:11px;font-weight:700;color:#fff;">Hugo L. <span style="color:var(--text3);font-weight:400;font-style:normal;">· Investisseur immobilier</span></div>
+        </div>
+        <div style="border-left:3px solid rgba(255,255,255,0.12);padding:8px 12px;background:var(--bg3);border-radius:0 6px 6px 0;">
+          <div style="font-size:12px;color:var(--text2);line-height:1.5;margin-bottom:5px;font-style:italic;">"Des stratégies sur mesure qui m'ont donné confiance dans ma gestion patrimoniale."</div>
+          <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.7);">Lucas G. <span style="color:var(--text3);font-weight:400;font-style:normal;">· Finance Manager</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RÉASSURANCE ORIAS -->
+    <div style="margin:12px 0 0;padding:14px 16px;background:rgba(200,150,62,0.05);border:1px solid rgba(200,150,62,0.15);border-radius:10px;">
+      <div style="font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:10px;text-align:center;">Expertise & Certifications</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+        <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-size:17px;font-weight:900;color:var(--gold-light);line-height:1;">10 ans</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">d'expérience finance</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-size:17px;font-weight:900;color:var(--gold-light);line-height:1;">45 M€</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">gérés chez BNP Paribas</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-size:17px;font-weight:900;color:var(--gold-light);line-height:1;">1,8 M€</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">actifs immo personnels</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:8px 10px;text-align:center;">
+          <div style="font-size:17px;font-weight:900;color:var(--gold-light);line-height:1;">+200</div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">clients accompagnés</div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:center;gap:6px;flex-wrap:wrap;">
+        <span style="background:var(--bg3);border:1px solid rgba(200,150,62,0.2);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;color:var(--gold-light);">AMF</span>
+        <span style="background:var(--bg3);border:1px solid rgba(200,150,62,0.2);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;color:var(--gold-light);">IOBSP</span>
+        <span style="background:var(--bg3);border:1px solid rgba(200,150,62,0.2);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;color:var(--gold-light);">CIF</span>
+        <span style="background:var(--bg3);border:1px solid rgba(200,150,62,0.25);border-radius:4px;padding:4px 8px;font-size:10px;font-weight:700;color:#fff;">ORIAS <span style="color:var(--text3);font-weight:400;">25001016</span></span>
+      </div>
+    </div>
+
+    <!-- CTA INSIGHTS — après la preuve sociale et la réassurance -->
     <div style="margin-top:18px;padding:16px 20px;background:linear-gradient(135deg,rgba(212,175,55,0.07),rgba(74,143,232,0.04));border:1px solid rgba(212,175,55,0.2);border-radius:10px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
       <div>
-        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px;">Ces recommandations sont faites pour toi 👆</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.5;">En 30 min, on transforme cette simulation en plan d'action concret.</div>
+        <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px;">Ces recommandations sont faites pour toi${prenom && prenom !== 'Vous' ? ', ' + prenom : ''} 👆</div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.5;">Score ${score}/100 · En 30 min on transforme ton potentiel de <strong style="color:var(--gold-light);white-space:nowrap;">${fmt(finalWithEpargne)}</strong> en plan d'action concret.</div>
       </div>
-      <a href="${CALENDLY_URL}" target="_blank" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;font-family:'DM Sans',sans-serif;padding:11px 22px;border-radius:9px;text-decoration:none;white-space:nowrap;box-shadow:0 4px 18px rgba(200,150,62,0.35);flex-shrink:0;transition:transform .2s;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">📅 Réserver mon audit gratuit →</a>
+      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">📅 Réserver mon audit gratuit →</a>
     </div>
 
     <!-- CTA -->
@@ -1390,13 +1623,13 @@ function render() {
           <div class="cta-photo-title">Fondateur · ADC Patrimoine</div>
         </div>
         <div class="cta-content">
-          <h3>${ctaConfig(capital).h3}</h3>
-          <p>${ctaConfig(capital).desc}</p>
-          <a href="${ctaConfig(capital).url}" class="cta-btn" target="_blank">
-            ${ctaConfig(capital).btnLabel}
+          <h3>${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).h3}</h3>
+          <p>${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).desc}</p>
+          <a href="${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).url}" class="cta-btn" target="_blank">
+            ${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).btnLabel}
           </a>
           <div class="cta-urgence" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;">
-            ${ctaConfig(capital).badges}
+            ${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).badges}
           </div>
         </div>
       </div>
@@ -1405,17 +1638,26 @@ function render() {
   `;
 
   initSliders();
+  // Sur desktop (>600px), afficher la section immo par défaut
+  if (window.innerWidth > 600) {
+    const p = document.getElementById('immo-panel');
+    const a = document.getElementById('immo-arrow');
+    if (p) p.style.display = 'block';
+    if (a) a.textContent = '▲';
+  }
   setTimeout(() => {
     drawBudgetChart(depenses, epargne);
     drawWealthChart(wealthData, wealthMin, wealthMax, years);
     drawCompoundChart(capital, epargne, rates.mid, years);
     drawMonthlyChart(capital, epargne, rates.mid, years);
     drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, finalWithEpargne, years, personnage, objectif, risque);
+    updateSimURL();
+    updateCalendlyLinks();
   }, 50);
 }
 
 function initSliders() {
-  ['sl-revenu', 'sl-epargne', 'sl-capital', 'sl-credit', 'sl-locatif'].forEach(id => {
+  ['sl-revenu', 'sl-epargne', 'sl-capital', 'sl-credit', 'sl-locatif', 'sl-conjoint'].forEach(id => {
     const el = document.getElementById(id);
     if (el) updateSliderTrack(el);
   });
@@ -1428,7 +1670,31 @@ function updateSliderTrack(el) {
 let _rerenderTimer = null;
 function debouncedRerender() {
   if (_rerenderTimer) clearTimeout(_rerenderTimer);
-  _rerenderTimer = setTimeout(() => { rerender(); }, 300);
+  _rerenderTimer = setTimeout(() => {
+    rerender();
+    updateSimURL();
+    updateCalendlyLinks();
+  }, 300);
+}
+
+function updateCalendlyLinks() {
+  updateSimURL();
+  const simUrl = window.location.href;
+  document.querySelectorAll('a[href*="calendly"]').forEach(a => {
+    try {
+      const u = new URL(CALENDLY_URL);
+      // UTM pour tracking
+      u.searchParams.set('utm_source', 'simulateur');
+      u.searchParams.set('utm_medium', state.prenom || 'prospect');
+      u.searchParams.set('utm_content', simUrl);
+      // Prefill nom
+      u.searchParams.set('name', state.prenom || '');
+      // Champ personnalisé Calendly "a1" = première question custom
+      // → apparaît directement dans le résumé de réservation Alexandre
+      u.searchParams.set('a2', simUrl);
+      a.href = u.toString();
+    } catch(e) {}
+  });
 }
 
 /* ── INPUT HANDLERS ─────────────────────────────────────────────────── */
@@ -1528,7 +1794,7 @@ function updateCredit(el) {
   const inp = document.getElementById('inp-credit');
   if (inp) inp.value = state.creditEnCours;
   const block = document.getElementById('immo-result-block');
-  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0);
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0, state.revenuConjoint||0);
 }
 function syncCreditSlider(el) {
   let v = parseInt(el.value);
@@ -1547,7 +1813,7 @@ function applyCreditInput(el) {
   const sl = document.getElementById('sl-credit');
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   const block = document.getElementById('immo-result-block');
-  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0);
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours, state.capital, state.revenuLocatif||0, state.revenuConjoint||0);
 }
 function updateLocatif(el) {
   updateSliderTrack(el);
@@ -1574,13 +1840,35 @@ function applyLocatifInput(el) {
   const sl = document.getElementById('sl-locatif');
   if (sl) { sl.value = v; updateSliderTrack(sl); }
   const block = document.getElementById('immo-result-block');
-  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif);
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif, state.revenuConjoint||0);
 }
 
-function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif) {
+function updateConjoint(el) {
+  updateSliderTrack(el);
+  const inp = document.getElementById('inp-conjoint');
+  if (inp) inp.value = el.value;
+  state.revenuConjoint = parseInt(el.value);
+  const block = document.getElementById('immo-result-block');
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif||0, state.revenuConjoint);
+}
+function syncConjointSlider(el) {
+  const sl = document.getElementById('sl-conjoint');
+  if (sl) { sl.value = el.value; updateSliderTrack(sl); }
+}
+function applyConjointInput(el) {
+  const v = Math.max(0, Math.min(10000, parseInt(el.value)||0));
+  el.value = v; state.revenuConjoint = v;
+  const sl = document.getElementById('sl-conjoint');
+  if (sl) { sl.value = v; updateSliderTrack(sl); }
+  const block = document.getElementById('immo-result-block');
+  if (block) block.innerHTML = renderImmoBlock(state.revenu, state.creditEnCours||0, state.capital, state.revenuLocatif||0, state.revenuConjoint);
+}
+
+function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif, revenuConjoint) {
   revenuLocatif = revenuLocatif || 0;
+  revenuConjoint = revenuConjoint || 0;
   const locatifRetenu = revenuLocatif * 0.7; // banques retiennent 70%
-  const revenuTotal = revenu + locatifRetenu;
+  const revenuTotal = revenu + locatifRetenu + revenuConjoint;
   const tauxMensuel = 0.035 / 12;
   const nMois20 = 240;
   const nMois25 = 300;
@@ -1617,18 +1905,19 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif) {
     <div style="margin-bottom:12px;background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px 22px;">
 
       <!-- KPIs top row -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px;">
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Revenus nets</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;">${Math.round(revenu).toLocaleString('fr-FR')} €</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:18px;">
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Revenus nets</div>
+          <div style="font-size:clamp(14px,3vw,20px);font-weight:800;color:#fff;white-space:nowrap;">${Math.round(revenu).toLocaleString('fr-FR')} €</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Apport dispo</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;">${Math.round(capital).toLocaleString('fr-FR')} €</div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Apport dispo</div>
+          <div style="font-size:clamp(14px,3vw,20px);font-weight:800;color:#fff;white-space:nowrap;">${Math.round(capital).toLocaleString('fr-FR')} €</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Taux d'endettement</div>
-          <div style="font-size:20px;font-weight:800;color:${tauxEndetActuel > 30 ? 'var(--red)' : 'var(--gold-light)'};">${tauxEndetActuel.toFixed(1)}<span style="font-size:13px;font-weight:600;">%</span> <span style="font-size:12px;font-weight:500;color:var(--text3);">/ 35%</span></div>
+        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 10px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;white-space:nowrap;">Endet. actuel</div>
+          <div style="font-size:clamp(14px,3vw,20px);font-weight:800;color:${tauxEndetActuel > 30 ? 'var(--red)' : 'var(--gold-light)'};white-space:nowrap;">${tauxEndetActuel.toFixed(1)}<span style="font-size:11px;font-weight:600;">%</span> <span style="font-size:10px;font-weight:500;color:var(--text3);">/ 35%</span></div>
+          <div style="font-size:9px;color:var(--text3);margin-top:2px;">crédits en cours</div>
         </div>
       </div>
 
@@ -1685,8 +1974,8 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif) {
         ${(() => {
           const mensualiteImmo20 = mensualiteImmoMax;
           const totalEngagements20 = creditEnCours + mensualiteImmo20;
-          const resteAVivre20 = revenu - totalEngagements20;
-          const tauxApresImmo20 = (totalEngagements20 / revenu * 100);
+          const resteAVivre20 = revenuTotal - totalEngagements20;
+          const tauxApresImmo20 = (totalEngagements20 / revenuTotal * 100);
           const rvColor = resteAVivre20 < 800 ? 'var(--red)' : resteAVivre20 < 1200 ? 'var(--gold-light)' : 'var(--green-light)';
           const rvLabel = resteAVivre20 < 800 ? '⚠️ Serré' : resteAVivre20 < 1200 ? '⚡ Correct' : '✅ Confortable';
           const barEngag = Math.min(100, tauxApresImmo20).toFixed(0);
@@ -1726,7 +2015,7 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif) {
             <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;margin-bottom:6px;">
               <div style="height:100%;width:${barEngag}%;background:${tauxApresImmo20 > 33 ? 'var(--red)' : 'linear-gradient(90deg,var(--gold-dark),var(--gold-light))'};border-radius:3px;"></div>
             </div>
-            <div style="font-size:10px;color:var(--text3);">Engagements : <strong style="color:#fff">${Math.round(totalEngagements20).toLocaleString('fr-FR')} €/mois</strong> · Revenus : <strong style="color:#fff">${Math.round(revenu).toLocaleString('fr-FR')} €</strong></div>
+            <div style="font-size:10px;color:var(--text3);">Engagements : <strong style="color:#fff">${Math.round(totalEngagements20).toLocaleString('fr-FR')} €/mois</strong> · Revenus bancaires : <strong style="color:#fff">${Math.round(revenuTotal).toLocaleString('fr-FR')} €</strong></div>
             <div style="margin-top:10px;font-size:11px;color:var(--text3);padding:8px 12px;background:rgba(255,255,255,0.03);border-radius:6px;">
               🏡 En RP, la mensualité remplace un loyer. Votre logement est gratuit — seul le remboursement mensuel sort de votre budget.
             </div>
@@ -2017,16 +2306,40 @@ function drawCompoundChart(capital, epargne, rate, years) {
   const capitalInvesti = labels.map((_, i) => capital + epargne * 12 * i);
   const patrimoine = calcWealth(capital, epargne, rate, years);
   const interets = patrimoine.map((v, i) => Math.max(0, v - capitalInvesti[i]));
+
+  const opts = chartDefaults();
+  opts.scales.x.stacked = true;
+  opts.scales.y.stacked = true;
+  opts.plugins.tooltip.callbacks = {
+    label: c => ' ' + c.dataset.label + ' : ' + fmt(Math.round(c.raw))
+  };
+
   charts['compound'] = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        { label: 'Capital investi', data: capitalInvesti, backgroundColor: 'rgba(74,143,232,0.6)', borderRadius: 4, borderSkipped: false },
-        { label: 'Gains générés', data: interets, backgroundColor: 'rgba(75,186,122,0.7)', borderRadius: 4, borderSkipped: false },
+        {
+          label: 'Versements',
+          data: capitalInvesti,
+          backgroundColor: 'rgba(100,130,220,0.8)',
+          borderColor: 'rgba(120,150,240,0.95)',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false
+        },
+        {
+          label: 'Intérêts',
+          data: interets,
+          backgroundColor: 'rgba(210,160,60,0.85)',
+          borderColor: 'rgba(230,180,70,0.95)',
+          borderWidth: 1,
+          borderRadius: 4,
+          borderSkipped: false
+        },
       ]
     },
-    options: { ...chartDefaults(), scales: { ...chartDefaults().scales, x: { ...chartDefaults().scales.x, stacked: true }, y: { ...chartDefaults().scales.y, stacked: true } } }
+    options: opts
   });
 }
 
@@ -2037,14 +2350,44 @@ function drawMonthlyChart(capital, epargne, rate, years) {
   const s0   = calcWealth(capital, 0, rate, years);
   const s50  = calcWealth(capital, Math.round(epargne*0.5), rate, years);
   const s100 = calcWealth(capital, epargne, rate, years);
+
   charts['monthly'] = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
       datasets: [
-        { label: `0 €/mois`, data: s0, borderColor: RED, borderWidth: 1.5, pointRadius: 0, tension: 0.4, borderDash: [3,3] },
-        { label: `${fmt(Math.round(epargne*0.5))}/mois`, data: s50, borderColor: BLUE, borderWidth: 1.5, pointRadius: 0, tension: 0.4 },
-        { label: `${fmt(epargne)}/mois`, data: s100, borderColor: GREEN, borderWidth: 2, pointRadius: 0, tension: 0.4, backgroundColor: 'rgba(75,186,122,0.07)', fill: true },
+        {
+          label: `0 €/mois`,
+          data: s0,
+          borderColor: 'rgba(90,96,112,0.8)',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.4,
+          borderDash: [4,4],
+          fill: false
+        },
+        {
+          label: `${fmt(Math.round(epargne*0.5))}/mois`,
+          data: s50,
+          borderColor: BLUE,
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.4,
+          borderDash: [4,4],
+          fill: false
+        },
+        {
+          label: `${fmt(epargne)}/mois`,
+          data: s100,
+          borderColor: GOLD_L,
+          backgroundColor: 'rgba(240,192,96,0.08)',
+          borderWidth: 2.5,
+          pointRadius: 0,
+          tension: 0.4,
+          fill: 'origin'
+        },
       ]
     },
     options: chartDefaults()
@@ -2063,13 +2406,13 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
   if (capital >= revenu * 6) insights.push({ type:'good', icon:'🏆', text:`<strong>Matelas de sécurité solide</strong> — ${prenom} dispose de plus de 6 mois de revenus en capital. Les placements moyen terme peuvent être envisagés avec sérénité.` });
   else if (capital < revenu * 2) insights.push({ type:'warn', icon:'🛡️', text:`<strong>Capital de départ modeste</strong> (${fmt(capital)}) — avant d'investir agressivement, il est conseillé de constituer un fonds de précaution de 3–6 mois de revenus.` });
 
-  insights.push({ type:'info', icon:'🔮', text:`Sur <strong>${years} ans</strong>, le patrimoine peut atteindre <strong>${fmt(finalVal)}</strong> en combinant capital initial et épargne mensuelle. C'est ${Math.round(finalVal/capital)}× le capital de départ.` });
+  insights.push({ type:'info', icon:'🔮', text:`Sur <strong>${years} ans</strong>, ton patrimoine peut atteindre <strong>${fmt(finalVal)}</strong>. C'est <strong>${Math.round(finalVal/capital)}× ton capital de départ</strong> — uniquement grâce aux intérêts composés et à la discipline d'épargne.` });
 
   if (personnage === 'independant' || personnage === 'chef') {
-    insights.push({ type:'info', icon:'💼', text:`<strong>Profil indépendant/entrepreneur</strong> — des enveloppes fiscales spécifiques existent (PER, assurance-vie, holding patrimoniale). L'optimisation fiscale peut libérer jusqu'à 30% de capacité d'investissement supplémentaire.` });
+    insights.push({ type:'info', icon:'💼', text:`<strong>Profil entrepreneur</strong> — avec une holding ou un PER, tu peux déduire jusqu'à <strong>${fmt(Math.round(Math.min(revenu * 0.10 * 12, 35194)))}/an</strong> de tes revenus imposables. C'est de l'argent investi au lieu d'être taxé.` });
   }
   if (personnage === 'etudiant') {
-    insights.push({ type:'good', icon:'⏰', text:`<strong>Commencer jeune est le meilleur levier</strong> — même 50–80 €/mois investis pendant 20 ans génèrent un patrimoine significatif grâce aux intérêts composés. Le temps est un avantage décisif.` });
+    insights.push({ type:'good', icon:'⏰', text:`<strong>Ton âge est ton meilleur actif</strong> — ${fmt(epargne || 100)}/mois investis pendant 20 ans = <strong>${fmt(Math.round((epargne || 100) * 12 * (Math.pow(1.07, 20) - 1) / 0.07))}</strong> à 7%/an. Commencer à 25 ans vs 35 ans double le capital final.` });
   }
 
   // Épargne de précaution
@@ -2086,9 +2429,13 @@ function drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, fina
     : risque === 'faible' 
     ? { actions: '10%', immo: '15%', oblig: '60%', cash: '15%', label: 'Prudent' }
     : { actions: '40%', immo: '20%', oblig: '30%', cash: '10%', label: 'Équilibré' };
-  recos.push({ title: '🏦 Enveloppe fiscale prioritaire', text: risque === 'faible' ? 'Livret A (3%) + Assurance-vie fonds euros pour sécuriser et défiscaliser.' : objectif === 'retraite' ? 'PER (Plan Épargne Retraite) : déductible des revenus + croissance long terme.' : 'PEA (exonération après 5 ans) + Assurance-vie UC pour performance long terme.' });
-  recos.push({ title: '📅 Versements automatiques', text: `Programmez un virement de ${fmt(epargne)} le jour de paie. L'automatisation supprime les biais comportementaux et garantit votre discipline sur le long terme.` });
-  recos.push({ title: '🎯 Action immédiate (30 jours)', text: `Investir ${fmt(capital)} maintenant = ${fmt(capital * RISQUE_RATES[risque].mid / 12)} de rendement mensuel estimé. Chaque mois d'attente est une opportunité manquée.` });
+  recos.push({ title: '🏦 Enveloppe fiscale — combien tu peux économiser', text: risque === 'faible'
+    ? `Livret A (3%) + Assurance-vie fonds euros. Sur ${fmt(capital)} investis, un PER peut te faire économiser jusqu'à <strong>${fmt(Math.round(capital * 0.11))}</strong> d'impôts dès cette année (TMI 11%).`
+    : objectif === 'retraite'
+    ? `PER (Plan Épargne Retraite) : déductible des revenus. Sur ${fmt(epargne * 12)}/an versés, <strong>${fmt(Math.round(epargne * 12 * 0.30))}</strong> d'impôts récupérés si TMI 30%.`
+    : `PEA (exonération totale après 5 ans) + Assurance-vie UC. <strong>0% d'impôt</strong> sur les plus-values après 5 ans sur PEA — sur ${fmt(capital)} investis à 8%/an, ça représente <strong>${fmt(Math.round(capital * 0.08 * 5 * 0.30))}</strong> d'impôts évités sur 5 ans.` });
+  recos.push({ title: '📅 Automatiser = +43% de patrimoine en moyenne', text: `Programmez un virement de <strong>${fmt(epargne)}</strong> le jour de paie. Les épargnants qui automatisent accumulent 43% de patrimoine supplémentaire vs ceux qui épargnent "ce qui reste".` });
+  recos.push({ title: `🎯 Chaque mois d'attente = ${fmt(Math.round(capital * RISQUE_RATES[risque].mid / 12))} perdu`, text: `Investir ${fmt(capital)} maintenant vs dans 6 mois = <strong>${fmt(Math.round(capital * RISQUE_RATES[risque].mid / 12 * 6))}</strong> de rendement manqué. L'effet de l'inaction se mesure en euros réels.` });
 
   const ib = document.getElementById('insights-box');
   const rb = document.getElementById('reco-box');
