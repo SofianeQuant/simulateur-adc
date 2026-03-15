@@ -1171,36 +1171,32 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   // CONFIG — remplace ces deux valeurs avant de déployer
   // ═══════════════════════════════════════════════════════════
   const ML_API_KEY            = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI0IiwianRpIjoiNDYwZmQxOGZlMzdlZjE4N2MwY2M5Y2UxNzg2N2FkOWVkYjRhMWU4MGQ2OTgxNDk0MDhmYWI0NjRhZDg2NThjZGFmNjJiNGJkZDUwODlkZGIiLCJpYXQiOjE3NzM2MDE1MTQuNzA0ODY2LCJuYmYiOjE3NzM2MDE1MTQuNzA0ODY5LCJleHAiOjQ5MjkyNzUxMTQuNjk2MzMzLCJzdWIiOiIyMjEyNTk4Iiwic2NvcGVzIjpbXX0.EuEfGNgMDOwabmIOz0loJVYURwn26shXSZYDlw8m06Ya7DZrmGacYwEw9_Fs7Ms3sYHhx5Lf3bmPggPgvjpHCo3pbCqHxOXtGt9IoUNr7FY8fvn88y1x3B71ymmzBZRscDhLPt_kDhBDChvzMO79ec5RgmY27TcpknFTjSmZ3j6jjgRlVDnKeoWjuJk2QRnc3Rh-AGWfcV17VCHq9uD9H900D2ItA4CIhFXe4KnCcO8PbXJP5oLEuxf6QHYb8cTYKrY5QwDf_x-I3-3h4r9y5HH_uvIHp8EyH5Oka6huoOK-XstXlhE2SpMS2nGUIRVzX4tu6uxt1upDbVooNlbBXft7pmCZkaDmxahWL_ZoW_5KPDHQpJT_xlVpbBx-mIX77XWX2omesthu26e4NrsLbpCkprBDZfmhZA6PFT2hrkrI5LHXllO2G_YmHbCyoZwRaWS8jpzykoIwuu8O74UOp-5WzHRpeILBrbqKL2Krdj9Z1Ee7vouU4tyuMXRr8_IGoaKaSFlqe_YZLgp0XUh8M9ib9ruInKdFPcjn0uk07ukZGpbnVBT8xm6bJ8Ci2bpwiNlxnmUNQrUnsKn0cWWUesyztU7k4dfj76neG4uLhzpnbHIt3TuSqCc4xVBHP8XBo6T0iVuMwvvdJtquHi_jQz43gJmNYoMj27VLdgnWAlQ';
-  // Token Notion stocké côté serveur dans Netlify Env Vars
-  // Le simulateur passe par /.netlify/functions/notion (proxy sans CORS)
-  const NOTION_PROXY          = '/.netlify/functions/notion';
+  const NOTION_TOKEN          = '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';
 
   // IDs fixes (ne pas toucher)
   const ML_GROUP_LEADS        = '182023504020899604';
   const ML_GROUP_OBJECTIF     = '182025250594096661';
-  const NOTION_DB_LEADS       = 'd3d17b01-f2c0-4548-917a-818926180265';
-  const NOTION_DB_VERSEMENTS  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';
+  const NOTION_DB_LEADS       = 'd3d17b01-f2c0-4548-917a-818926180265';   // collection ID Leads
+  const NOTION_DB_VERSEMENTS  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';   // collection ID Déclarations
 
-  // Tous les appels Notion passent par ce proxy
-  async function notionCall(path, method, body) {
-    const res = await fetch(NOTION_PROXY, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ path, method: method || 'GET', body })
-    });
-    return res.json();
-  }
-
-  const NOTION_HEADERS = () => ({});  // gardé pour compatibilité, non utilisé
+  const NOTION_HEADERS = () => ({
+    'Authorization': 'Bearer ' + NOTION_TOKEN,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28'
+  });
 
   // ═══════════════════════════════════════════════════════════
   // NOTION — chercher une page lead par email
   // ═══════════════════════════════════════════════════════════
   async function notionFindLead(email) {
     try {
-      const res = await notionCall('/databases/' + NOTION_DB_LEADS + '/query', 'POST', {
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_LEADS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
           filter: { property: 'Email', email: { equals: email } }
-        });
+        })
+      });
       const data = await res.json();
       return data.results?.[0] || null;
     } catch(e) { console.error('notionFindLead', e); return null; }
@@ -1231,14 +1227,23 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
       }
 
       if (existing) {
-        await notionCall('/pages/' + existing.id, 'PATCH', { properties: props });
+        await fetch('https://api.notion.com/v1/pages/' + existing.id, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({ properties: props })
+        });
         return existing.id;
       } else {
-        const res = await notionCall('/pages', 'POST', {
+        const res = await fetch('https://api.notion.com/v1/pages', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
             parent: { database_id: NOTION_DB_LEADS },
             properties: props
-          });
-        return res.id;
+          })
+        });
+        const data = await res.json();
+        return data.id;
       }
     } catch(e) { console.error('notionUpsertLead', e); return null; }
   }
@@ -1249,14 +1254,19 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   async function notionSaveVersement(email, prenom, montant, capitalTotal, moisKey, leadPageId) {
     try {
       // Chercher si une déclaration existe déjà pour ce mois
-      const data = await notionCall('/databases/' + NOTION_DB_VERSEMENTS + '/query', 'POST', {
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
           filter: {
             and: [
               { property: 'Email', email: { equals: email } },
               { property: 'Mois déclaré', rich_text: { equals: moisKey } }
             ]
           }
-        });
+        })
+      });
+      const data = await res.json();
       const existing = data.results?.[0];
 
       const [year, month] = moisKey.split('-');
@@ -1276,12 +1286,20 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
 
       if (existing) {
         // Mettre à jour le versement existant pour ce mois
-        await notionCall('/pages/' + existing.id, 'PATCH', { properties: props });
+        await fetch('https://api.notion.com/v1/pages/' + existing.id, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({ properties: props })
+        });
       } else {
-        await notionCall('/pages', 'POST', {
+        await fetch('https://api.notion.com/v1/pages', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
             parent: { database_id: NOTION_DB_VERSEMENTS },
             properties: props
-          });
+          })
+        });
       }
     } catch(e) { console.error('notionSaveVersement', e); }
   }
@@ -1291,10 +1309,15 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   // ═══════════════════════════════════════════════════════════
   async function notionLoadVersements(email) {
     try {
-      const data = await notionCall('/databases/' + NOTION_DB_VERSEMENTS + '/query', 'POST', {
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
           filter: { property: 'Email', email: { equals: email } },
           sorts: [{ property: 'Date déclaration', direction: 'ascending' }]
-        });
+        })
+      });
+      const data = await res.json();
       const versements = {};
       for (const page of (data.results || [])) {
         const mois    = page.properties['Mois déclaré']?.rich_text?.[0]?.plain_text;
@@ -1311,7 +1334,11 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   async function notionSetStatut(leadPageId, statut) {
     if (!leadPageId) return;
     try {
-      await notionCall('/pages/' + leadPageId, 'PATCH', { properties: { 'Statut': { select: { name: statut } } } });
+      await fetch('https://api.notion.com/v1/pages/' + leadPageId, {
+        method: 'PATCH',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({ properties: { 'Statut': { select: { name: statut } } } })
+      });
     } catch(e) { console.error('notionSetStatut', e); }
   }
 
@@ -1404,7 +1431,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
 
     // 2. Tenter de charger les versements depuis Notion (cross-device)
     let versementsNotion = {};
-    if (true) {
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
       versementsNotion = await notionLoadVersements(email);
     }
 
@@ -1426,7 +1453,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     renderSuiviActif(email);
 
     // 5. Sauvegarder dans Notion en arrière-plan
-    if (true) {
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
       notionUpsertLead(email, { prenom, capitalDepart, capital: capitalDepart, cible, epargne: state.epargne || 0 });
     }
 
@@ -1458,7 +1485,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     rafraichirSuivi(data);
 
     // 4. Sauvegarder dans Notion (source de vérité)
-    if (true) {
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
       // Récupérer l'ID de la page lead pour la relation
       const leadPage = await notionFindLead(_suiviEmail);
       const leadPageId = leadPage?.id || null;
@@ -1468,9 +1495,13 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
 
       // Mettre à jour le capital dans la page lead
       if (leadPageId) {
-        await notionCall('/pages/' + leadPageId, 'PATCH', {
+        await fetch('https://api.notion.com/v1/pages/' + leadPageId, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
             properties: { 'Capital départ': { number: capitalTotal } }
-          });
+          })
+        });
       }
 
       // 5. Objectif atteint → basculer statut + groupe MailerLite
@@ -1498,18 +1529,27 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     rafraichirSuivi(data);
 
     // Supprimer dans Notion
-    if (true) {
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
       try {
-        const d = await notionCall('/databases/' + NOTION_DB_VERSEMENTS + '/query', 'POST', {
+        const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
             filter: {
               and: [
                 { property: 'Email', email: { equals: _suiviEmail } },
                 { property: 'Mois déclaré', rich_text: { equals: moisKey } }
               ]
             }
-          });
+          })
+        });
+        const d = await res.json();
         if (d.results?.[0]) {
-          await notionCall('/pages/' + d.results[0].id, 'PATCH', { archived: true });
+          await fetch('https://api.notion.com/v1/pages/' + d.results[0].id, {
+            method: 'PATCH',
+            headers: NOTION_HEADERS(),
+            body: JSON.stringify({ archived: true })
+          });
         }
       } catch(e) { console.error('supprimerVersementNotion', e); }
     }
@@ -2055,6 +2095,47 @@ function updateCalendlyLinks() {
       a.href = u.toString();
     } catch(e) {}
   });
+  // Sauvegarde Notion du lien simulateur (leads >= 5 000€ uniquement)
+  if (state.capital >= 5000) _saveSimLinkToNotion(simUrl);
+}
+
+// Debounce 2s pour éviter les appels Notion trop fréquents
+let _simLinkSaveTimer = null;
+async function _saveSimLinkToNotion(simUrl) {
+  if (_simLinkSaveTimer) clearTimeout(_simLinkSaveTimer);
+  _simLinkSaveTimer = setTimeout(async () => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const email = params.get('email');
+      if (!email) return;
+      const searchRes = await notionCall('/databases/' + NOTION_DB_LEADS + '/query', 'POST', {
+        filter: { property: 'Email', email: { equals: email } }
+      });
+      const lead = searchRes.results?.[0];
+      if (lead) {
+        await notionCall('/pages/' + lead.id, 'PATCH', {
+          properties: {
+            'Lien simulation': { url: simUrl },
+            'Capital départ':  { number: state.capital },
+            'Épargne / mois':  { number: state.epargne },
+          }
+        });
+      } else {
+        await notionCall('/pages', 'POST', {
+          parent: { database_id: NOTION_DB_LEADS },
+          properties: {
+            'Prénom':           { title: [{ text: { content: state.prenom || 'Vous' } }] },
+            'Email':            { email: email },
+            'Capital départ':   { number: state.capital },
+            'Épargne / mois':   { number: state.epargne },
+            'Lien simulation':  { url: simUrl },
+            'Statut':           { select: { name: '🔥 Lead chaud' } },
+            'Date inscription': { date: { start: new Date().toISOString().split('T')[0] } },
+          }
+        });
+      }
+    } catch(e) { console.error('saveSimLink', e); }
+  }, 2000);
 }
 
 // MutationObserver — met à jour les liens Calendly dès qu'ils apparaissent dans le DOM
