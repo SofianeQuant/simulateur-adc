@@ -1652,8 +1652,6 @@ function render() {
     drawMonthlyChart(capital, epargne, rates.mid, years);
     drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, finalWithEpargne, years, personnage, objectif, risque);
     updateSimURL();
-    // Délai supplémentaire pour que tous les liens soient dans le DOM
-    setTimeout(() => updateCalendlyLinks(), 50);
   }, 50);
 }
 
@@ -1673,33 +1671,50 @@ function debouncedRerender() {
   if (_rerenderTimer) clearTimeout(_rerenderTimer);
   _rerenderTimer = setTimeout(() => {
     rerender();
-    // rerender() est async (setTimeout interne) — on attend qu'il finisse
-    setTimeout(() => {
-      updateSimURL();
-      updateCalendlyLinks();
-    }, 150);
+    updateSimURL();
   }, 300);
 }
 
+function getSimUrl() {
+  // Construit l'URL avec les paramètres courants sans replaceState
+  const params = new URLSearchParams();
+  if (state.prenom) params.set('prenom', state.prenom);
+  if (state.capital) params.set('capital', state.capital);
+  if (state.revenu) params.set('revenu', state.revenu);
+  if (state.epargne) params.set('epargne', state.epargne);
+  if (state.creditEnCours) params.set('credit', state.creditEnCours);
+  if (state.revenuLocatif) params.set('locatif', state.revenuLocatif);
+  if (state.revenuConjoint) params.set('conjoint', state.revenuConjoint);
+  if (state.risque) params.set('risque', state.risque);
+  if (state.objectif) params.set('objectif', state.objectif);
+  if (state.personnage) params.set('personnage', state.personnage);
+  return window.location.origin + window.location.pathname + '?' + params.toString();
+}
+
 function updateCalendlyLinks() {
-  updateSimURL();
-  const simUrl = window.location.href;
+  const simUrl = getSimUrl();
   document.querySelectorAll('a[href*="calendly"]').forEach(a => {
     try {
       const u = new URL(CALENDLY_URL);
-      // UTM pour tracking
       u.searchParams.set('utm_source', 'simulateur');
       u.searchParams.set('utm_medium', state.prenom || 'prospect');
       u.searchParams.set('utm_content', simUrl);
-      // Prefill nom
       u.searchParams.set('name', state.prenom || '');
-      // Champ personnalisé Calendly "a1" = première question custom
-      // → apparaît directement dans le résumé de réservation Alexandre
       u.searchParams.set('a2', simUrl);
       a.href = u.toString();
     } catch(e) {}
   });
 }
+
+// MutationObserver — met à jour les liens Calendly dès qu'ils apparaissent dans le DOM
+(function initCalendlyObserver() {
+  const observer = new MutationObserver(() => {
+    if (document.querySelectorAll('a[href*="calendly"]').length > 0) {
+      updateCalendlyLinks();
+    }
+  });
+  observer.observe(document.body, { childList: true, subtree: true });
+})();
 
 /* ── INPUT HANDLERS ─────────────────────────────────────────────────── */
 // Slider → update track + input field + rerender différé
