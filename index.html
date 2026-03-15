@@ -1652,7 +1652,8 @@ function render() {
     drawMonthlyChart(capital, epargne, rates.mid, years);
     drawInsights(prenom, capital, revenu, epargne, tauxEpargne, score, finalWithEpargne, years, personnage, objectif, risque);
     updateSimURL();
-    updateCalendlyLinks();
+    // Délai supplémentaire pour que tous les liens soient dans le DOM
+    setTimeout(() => updateCalendlyLinks(), 50);
   }, 50);
 }
 
@@ -1672,8 +1673,11 @@ function debouncedRerender() {
   if (_rerenderTimer) clearTimeout(_rerenderTimer);
   _rerenderTimer = setTimeout(() => {
     rerender();
-    updateSimURL();
-    updateCalendlyLinks();
+    // rerender() est async (setTimeout interne) — on attend qu'il finisse
+    setTimeout(() => {
+      updateSimURL();
+      updateCalendlyLinks();
+    }, 150);
   }, 300);
 }
 
