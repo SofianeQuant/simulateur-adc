@@ -1167,45 +1167,435 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     `;
   }
 
-  window.activerSuivi = function() {
+  // ═══════════════════════════════════════════════════════════
+  // CONFIG — remplace ces deux valeurs avant de déployer
+  // ═══════════════════════════════════════════════════════════
+  const ML_API_KEY            = 'INSERE_TA_CLE_MAILERLITE_ICI';
+  const NOTION_TOKEN          = 'INSERE_TON_NOTION_TOKEN_ICI';
+
+  // IDs fixes (ne pas toucher)
+  const ML_GROUP_LEADS        = '182023504020899604';
+  const ML_GROUP_OBJECTIF     = '182025250594096661';
+  const NOTION_DB_LEADS       = 'd3d17b01-f2c0-4548-917a-818926180265';   // collection ID Leads
+  const NOTION_DB_VERSEMENTS  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';   // collection ID Déclarations
+
+  const NOTION_HEADERS = () => ({
+    'Authorization': 'Bearer ' + NOTION_TOKEN,
+    'Content-Type': 'application/json',
+    'Notion-Version': '2022-06-28'
+  });
+
+  // ═══════════════════════════════════════════════════════════
+  // NOTION — chercher une page lead par email
+  // ═══════════════════════════════════════════════════════════
+  async function notionFindLead(email) {
+    try {
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_LEADS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
+          filter: { property: 'Email', email: { equals: email } }
+        })
+      });
+      const data = await res.json();
+      return data.results?.[0] || null;
+    } catch(e) { console.error('notionFindLead', e); return null; }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NOTION — créer ou mettre à jour le lead
+  // ═══════════════════════════════════════════════════════════
+  async function notionUpsertLead(email, fields) {
+    try {
+      const existing = await notionFindLead(email);
+      const simUrl = window.location.href.split('?')[0]
+        + '?email=' + encodeURIComponent(email)
+        + '&prenom=' + encodeURIComponent(fields.prenom || 'Vous')
+        + '&capital=' + (fields.capital || 0);
+
+      const props = {
+        'Prénom':          { title: [{ text: { content: fields.prenom || 'Vous' } }] },
+        'Email':           { email: email },
+        'Capital départ':  { number: fields.capitalDepart || fields.capital || 0 },
+        'Objectif cible':  { number: fields.cible || 5000 },
+        'Lien simulation': { url: simUrl },
+        'Statut':          { select: { name: '🟡 En cours' } },
+      };
+      if (fields.epargne) props['Épargne / mois'] = { number: fields.epargne };
+      if (!existing) {
+        props['Date inscription'] = { date: { start: new Date().toISOString().split('T')[0] } };
+      }
+
+      if (existing) {
+        await fetch('https://api.notion.com/v1/pages/' + existing.id, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({ properties: props })
+        });
+        return existing.id;
+      } else {
+        const res = await fetch('https://api.notion.com/v1/pages', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
+            parent: { database_id: NOTION_DB_LEADS },
+            properties: props
+          })
+        });
+        const data = await res.json();
+        return data.id;
+      }
+    } catch(e) { console.error('notionUpsertLead', e); return null; }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NOTION — sauvegarder un versement
+  // ═══════════════════════════════════════════════════════════
+  async function notionSaveVersement(email, prenom, montant, capitalTotal, moisKey, leadPageId) {
+    try {
+      // Chercher si une déclaration existe déjà pour ce mois
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
+          filter: {
+            and: [
+              { property: 'Email', email: { equals: email } },
+              { property: 'Mois déclaré', rich_text: { equals: moisKey } }
+            ]
+          }
+        })
+      });
+      const data = await res.json();
+      const existing = data.results?.[0];
+
+      const [year, month] = moisKey.split('-');
+      const dateStr = year + '-' + month + '-01';
+
+      const props = {
+        'Prénom':             { title: [{ text: { content: prenom || 'Vous' } }] },
+        'Email':              { email: email },
+        'Montant versé':      { number: montant },
+        'Capital total actuel': { number: capitalTotal },
+        'Mois déclaré':       { rich_text: [{ text: { content: moisKey } }] },
+        'Date déclaration':   { date: { start: dateStr } },
+      };
+      if (leadPageId) {
+        props['Lead associé'] = { relation: [{ id: leadPageId }] };
+      }
+
+      if (existing) {
+        // Mettre à jour le versement existant pour ce mois
+        await fetch('https://api.notion.com/v1/pages/' + existing.id, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({ properties: props })
+        });
+      } else {
+        await fetch('https://api.notion.com/v1/pages', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
+            parent: { database_id: NOTION_DB_VERSEMENTS },
+            properties: props
+          })
+        });
+      }
+    } catch(e) { console.error('notionSaveVersement', e); }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NOTION — charger les versements d'un lead (cross-device)
+  // ═══════════════════════════════════════════════════════════
+  async function notionLoadVersements(email) {
+    try {
+      const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+        method: 'POST',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({
+          filter: { property: 'Email', email: { equals: email } },
+          sorts: [{ property: 'Date déclaration', direction: 'ascending' }]
+        })
+      });
+      const data = await res.json();
+      const versements = {};
+      for (const page of (data.results || [])) {
+        const mois    = page.properties['Mois déclaré']?.rich_text?.[0]?.plain_text;
+        const montant = page.properties['Montant versé']?.number;
+        if (mois && montant != null) versements[mois] = montant;
+      }
+      return versements;
+    } catch(e) { console.error('notionLoadVersements', e); return {}; }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // NOTION — mettre à jour le statut du lead
+  // ═══════════════════════════════════════════════════════════
+  async function notionSetStatut(leadPageId, statut) {
+    if (!leadPageId) return;
+    try {
+      await fetch('https://api.notion.com/v1/pages/' + leadPageId, {
+        method: 'PATCH',
+        headers: NOTION_HEADERS(),
+        body: JSON.stringify({ properties: { 'Statut': { select: { name: statut } } } })
+      });
+    } catch(e) { console.error('notionSetStatut', e); }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // MAILERLITE — inscrire / mettre à jour un subscriber
+  // ═══════════════════════════════════════════════════════════
+  async function mlUpsertSubscriber(email, fields, groupId) {
+    if (ML_API_KEY === 'INSERE_TA_CLE_MAILERLITE_ICI') return null;
+    try {
+      const body = { email, fields: {} };
+      if (fields.prenom)   body.fields.prenom   = fields.prenom;
+      if (fields.capital != null) body.fields.capital  = String(fields.capital);
+      if (fields.epargne != null) body.fields.epargne  = String(fields.epargne);
+      if (fields.objectif != null) body.fields.objectif = String(fields.objectif);
+      body.fields.sim_url = window.location.href.split('?')[0]
+        + '?email=' + encodeURIComponent(email)
+        + '&prenom=' + encodeURIComponent(fields.prenom || 'Vous')
+        + '&capital=' + (fields.capital || 0);
+
+      const res  = await fetch('https://connect.mailerlite.com/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify(body)
+      });
+      const sub  = await res.json();
+      const sid  = sub?.data?.id;
+      if (!sid) return null;
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      });
+      return sid;
+    } catch(e) { console.error('mlUpsertSubscriber', e); return null; }
+  }
+
+  async function mlRemoveFromGroup(email, groupId) {
+    if (ML_API_KEY === 'INSERE_TA_CLE_MAILERLITE_ICI') return;
+    try {
+      const r   = await fetch('https://connect.mailerlite.com/api/subscribers/' + encodeURIComponent(email), {
+        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      });
+      const sub = await r.json();
+      const sid = sub?.data?.id;
+      if (!sid) return;
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      });
+    } catch(e) { console.error('mlRemoveFromGroup', e); }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // AFFICHAGE — bouton objectif atteint
+  // ═══════════════════════════════════════════════════════════
+  function afficherObjectifAtteint(capitalTotal) {
+    const prog = document.getElementById('suivi-progress');
+    if (!prog || document.getElementById('objectif-atteint-banner')) return;
+    prog.insertAdjacentHTML('afterend', `
+      <div id="objectif-atteint-banner" style="margin-top:14px;padding:16px 18px;background:linear-gradient(135deg,rgba(75,186,122,0.12),rgba(212,175,55,0.06));border:1px solid rgba(75,186,122,0.4);border-radius:10px;text-align:center;">
+        <div style="font-size:15px;font-weight:800;color:var(--green-light);margin-bottom:6px;">🏆 Objectif atteint !</div>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:14px;line-height:1.6;">
+          Tu as atteint <strong style="color:#fff">${Math.round(capitalTotal).toLocaleString('fr-FR')} €</strong>.<br>Alexandre va te contacter pour organiser ton audit patrimonial gratuit.
+        </div>
+        <a href="https://calendly.com/sofianedidi15/un-investisseur-presque-parfait" target="_blank"
+           style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));color:#111;font-weight:800;font-size:13px;padding:11px 24px;border-radius:8px;text-decoration:none;box-shadow:0 4px 16px rgba(200,150,62,0.35);">
+          📅 Réserver mon audit gratuit →
+        </a>
+      </div>`);
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  // ACTIVER LE SUIVI — sauvegarde Notion + MailerLite
+  // ═══════════════════════════════════════════════════════════
+  window.activerSuivi = async function() {
     const emailInput = document.getElementById('suivi-email');
-    const email = emailInput.value.trim();
+    const email      = emailInput.value.trim();
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       document.getElementById('suivi-error').style.display = 'block';
       return;
     }
-    const capitalCustom = Math.max(0, parseInt(document.getElementById('suivi-capital-input').value) || 0);
-    const cibleCustom   = Math.max(100, parseInt(document.getElementById('suivi-cible-input').value) || 5000);
     document.getElementById('suivi-error').style.display = 'none';
-    const data = getSuiviData(email);
-    data.capital = capitalCustom;
-    data.cible   = cibleCustom;
+
+    const capitalDepart = Math.max(0, parseInt(document.getElementById('suivi-capital-input').value) || 0);
+    const cible         = Math.max(100, parseInt(document.getElementById('suivi-cible-input').value) || 5000);
+    const prenom        = state.prenom || 'Vous';
+
+    // 1. Afficher un état "chargement" et vérifier si données Notion existent déjà
+    const btn = document.querySelector('[onclick="activerSuivi()"]');
+    if (btn) { btn.disabled = true; btn.textContent = 'Chargement...'; }
+
+    // 2. Tenter de charger les versements depuis Notion (cross-device)
+    let versementsNotion = {};
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
+      versementsNotion = await notionLoadVersements(email);
+    }
+
+    // 3. Construire l'objet data en fusionnant Notion + localStorage
+    const dataLocal = getSuiviData(email);
+    const versementsFusionnes = Object.assign({}, dataLocal.versements, versementsNotion);
+    const data = {
+      email,
+      prenom,
+      capital:    capitalDepart,
+      cible:      cible,
+      versements: versementsFusionnes,
+    };
     saveSuiviData(data);
     try { localStorage.setItem('adc_suivi_last_email', email); } catch(e) {}
+
+    // 4. Afficher l'UI de suivi immédiatement
+    if (btn) { btn.disabled = false; btn.textContent = 'Activer le suivi →'; }
     renderSuiviActif(email);
+
+    // 5. Sauvegarder dans Notion en arrière-plan
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
+      notionUpsertLead(email, { prenom, capitalDepart, capital: capitalDepart, cible, epargne: state.epargne || 0 });
+    }
+
+    // 6. Inscrire dans MailerLite en arrière-plan
+    mlUpsertSubscriber(email, { prenom, capital: capitalDepart, epargne: state.epargne || 0, objectif: cible }, ML_GROUP_LEADS);
   };
 
-  window.ajouterVersement = function() {
+  // ═══════════════════════════════════════════════════════════
+  // AJOUTER UN VERSEMENT — sauvegarde Notion + MailerLite + local
+  // ═══════════════════════════════════════════════════════════
+  window.ajouterVersement = async function() {
     if (!_suiviEmail) return;
     const moisKey = document.getElementById('suivi-mois-sel').value;
     const montant = parseFloat(document.getElementById('suivi-montant').value);
     if (!montant || montant <= 0) return;
+
+    // 1. Mettre à jour en local immédiatement
     const data = getSuiviData(_suiviEmail);
     data.versements[moisKey] = (data.versements[moisKey] || 0) + montant;
     saveSuiviData(data);
     document.getElementById('suivi-montant').value = '';
+
+    // 2. Calculer le capital total
+    const totalVerse   = Object.values(data.versements).reduce((s, v) => s + v, 0);
+    const capitalTotal = (data.capital || 0) + totalVerse;
+    const prenom       = data.prenom || state.prenom || 'Vous';
+
+    // 3. Rafraîchir l'UI
     rafraichirSuivi(data);
+
+    // 4. Sauvegarder dans Notion (source de vérité)
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
+      // Récupérer l'ID de la page lead pour la relation
+      const leadPage = await notionFindLead(_suiviEmail);
+      const leadPageId = leadPage?.id || null;
+
+      // Sauvegarder le versement
+      await notionSaveVersement(_suiviEmail, prenom, montant, capitalTotal, moisKey, leadPageId);
+
+      // Mettre à jour le capital dans la page lead
+      if (leadPageId) {
+        await fetch('https://api.notion.com/v1/pages/' + leadPageId, {
+          method: 'PATCH',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
+            properties: { 'Capital départ': { number: capitalTotal } }
+          })
+        });
+      }
+
+      // 5. Objectif atteint → basculer statut + groupe MailerLite
+      if (capitalTotal >= (data.cible || 5000)) {
+        afficherObjectifAtteint(capitalTotal);
+        if (leadPageId) await notionSetStatut(leadPageId, '✅ Objectif atteint');
+        await mlUpsertSubscriber(_suiviEmail, { prenom, capital: capitalTotal }, ML_GROUP_OBJECTIF);
+        await mlRemoveFromGroup(_suiviEmail, ML_GROUP_LEADS);
+      }
+    }
+
+    // 6. Mettre à jour MailerLite (capital à jour)
+    mlUpsertSubscriber(_suiviEmail, {
+      prenom,
+      capital:  capitalTotal,
+      objectif: data.cible || 5000
+    }, ML_GROUP_LEADS);
   };
 
-  window.supprimerVersement = function(moisKey) {
+  window.supprimerVersement = async function(moisKey) {
     if (!_suiviEmail) return;
     const data = getSuiviData(_suiviEmail);
     delete data.versements[moisKey];
     saveSuiviData(data);
     rafraichirSuivi(data);
+
+    // Supprimer dans Notion
+    if (NOTION_TOKEN !== 'INSERE_TON_NOTION_TOKEN_ICI') {
+      try {
+        const res = await fetch('https://api.notion.com/v1/databases/' + NOTION_DB_VERSEMENTS + '/query', {
+          method: 'POST',
+          headers: NOTION_HEADERS(),
+          body: JSON.stringify({
+            filter: {
+              and: [
+                { property: 'Email', email: { equals: _suiviEmail } },
+                { property: 'Mois déclaré', rich_text: { equals: moisKey } }
+              ]
+            }
+          })
+        });
+        const d = await res.json();
+        if (d.results?.[0]) {
+          await fetch('https://api.notion.com/v1/pages/' + d.results[0].id, {
+            method: 'PATCH',
+            headers: NOTION_HEADERS(),
+            body: JSON.stringify({ archived: true })
+          });
+        }
+      } catch(e) { console.error('supprimerVersementNotion', e); }
+    }
   };
 
-  // ── Initialisation directe du tracker (plus de gate email) ──
+  // ═══════════════════════════════════════════════════════════
+  // AUTO-RESTAURATION — si email dans l'URL, charger depuis Notion
+  // ═══════════════════════════════════════════════════════════
+  (async function autoRestore() {
+    const params = new URLSearchParams(window.location.search);
+    const emailUrl = params.get('email');
+    if (!emailUrl) return;
+
+    // Pré-remplir le champ email
+    const emailField = document.getElementById('suivi-email');
+    if (emailField) emailField.value = emailUrl;
+
+    if (NOTION_TOKEN === 'INSERE_TON_NOTION_TOKEN_ICI') return;
+
+    // Charger les versements depuis Notion
+    const versementsNotion = await notionLoadVersements(emailUrl);
+    if (Object.keys(versementsNotion).length === 0) return;
+
+    // Charger les infos du lead
+    const lead = await notionFindLead(emailUrl);
+    const capitalDepart = lead?.properties?.['Capital départ']?.number || 0;
+    const cible         = lead?.properties?.['Objectif cible']?.number || 5000;
+    const prenomNotion  = lead?.properties?.['Prénom']?.title?.[0]?.plain_text || state.prenom || 'Vous';
+
+    // Fusionner avec le localStorage
+    const dataLocal = getSuiviData(emailUrl);
+    const data = {
+      email:      emailUrl,
+      prenom:     prenomNotion,
+      capital:    capitalDepart,
+      cible:      cible,
+      versements: Object.assign({}, dataLocal.versements, versementsNotion),
+    };
+    saveSuiviData(data);
+    try { localStorage.setItem('adc_suivi_last_email', emailUrl); } catch(e) {}
+
+    // Afficher directement le tableau de suivi
+    renderSuiviActif(emailUrl);
+  })();
+
+  // ── Initialisation directe du tracker ──
   if (document.getElementById('tracker-table'))
     document.getElementById('tracker-table').innerHTML = buildTracker(12);
 
