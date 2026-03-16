@@ -2958,6 +2958,44 @@ function exportPDF() {
 }
 
 // ─── INIT ────────────────────────────────────────────────────────────────────
+// Sauvegarde immédiate quand le lead quitte la page ou change d'onglet
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') {
+    const params = new URLSearchParams(window.location.search);
+    const email = params.get('email');
+    if (!email || !state.prenom) return;
+    clearTimeout(_saveSimTimer);
+    const simUrl = window.location.origin + window.location.pathname
+      + '?source=tally'
+      + '&email=' + encodeURIComponent(email)
+      + '&prenom=' + encodeURIComponent(state.prenom || '')
+      + '&personnage=' + encodeURIComponent(state.personnage || 'cdi')
+      + '&capital=' + (state.capital || 0)
+      + '&risque=' + encodeURIComponent(state.risque || 'moderee')
+      + '&objectif=' + encodeURIComponent(state.objectif || 'performance')
+      + '&revenu=' + (state.revenu || 0)
+      + '&epargne=' + (state.epargne || 0)
+      + (state.creditEnCours ? '&credit=' + state.creditEnCours : '')
+      + (state.revenuLocatif ? '&locatif=' + state.revenuLocatif : '')
+      + (state.revenuConjoint ? '&conjoint=' + state.revenuConjoint : '');
+    // Sauvegarde via beacon (fonctionne même en quittant la page)
+    navigator.sendBeacon
+      ? navigator.sendBeacon('https://adc-proxy.sofiane-didi.workers.dev', JSON.stringify({
+          action: 'upsertLead', email,
+          fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl },
+          dbId: NOTION_DB_LEADS_GLOBAL
+        }))
+      : fetch('https://adc-proxy.sofiane-didi.workers.dev', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, keepalive: true,
+          body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
+        });
+    // MailerLite via beacon
+    navigator.sendBeacon
+      ? navigator.sendBeacon('https://connect.mailerlite.com/api/subscribers', JSON.stringify({ email, fields: { sim_url: simUrl } }))
+      : null;
+  }
+});
+
 window.addEventListener('DOMContentLoaded', () => {
   const parsed = parseParams();
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
