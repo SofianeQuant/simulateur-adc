@@ -787,6 +787,37 @@ function copySimLink() {
 const EBOOK_URL   = 'https://drive.google.com/file/d/1uhUf_NzdhNdwtrXVp1emWcVmPvOCJguU/view?usp=sharing';
 const CALENDLY_URL = 'https://calendly.com/sofianedidi15/un-investisseur-presque-parfait';
 
+// Déclenché au clic sur un CTA Calendly — enregistre le lead dans MailerLite + Notion
+async function onCalendlyClick() {
+  const params = new URLSearchParams(window.location.search);
+  const email = params.get('email');
+  if (!email) return;
+  const simUrl = window.location.href;
+  const GROUP_5K = '182059741376152834';
+  // MailerLite direct
+  try {
+    const res = await fetch('https://connect.mailerlite.com/api/subscribers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+      body: JSON.stringify({ email, fields: { prenom: state.prenom, capital: String(state.capital), epargne: String(state.epargne), sim_url: simUrl } })
+    });
+    const sub = await res.json();
+    const sid = sub?.data?.id;
+    if (sid) {
+      try { await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + ML_API_KEY } }); } catch(e) {}
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'POST', headers: { 'Authorization': 'Bearer ' + ML_API_KEY } });
+    }
+  } catch(e) {}
+  // Notion via Netlify Function
+  try {
+    await fetch('/.netlify/functions/notion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
+    });
+  } catch(e) {}
+}
+
 function ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom) {
   const fmt = n => Math.round(n).toLocaleString('fr-FR') + ' €';
   if (capital < 5000) {
@@ -1770,7 +1801,7 @@ function render() {
     <div style="background:linear-gradient(135deg,rgba(200,150,62,0.08),rgba(200,150,62,0.04));border:1px solid rgba(200,150,62,0.25);border-radius:12px;padding:16px 18px;margin:20px 0 0;">
       <p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">💡 ${fmt(finalWithEpargne)} dans ${years} ans — on peut faire mieux ensemble</p>
       <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Avec ${fmt(capital)} investis et ${fmt(epargne)}/mois, Alexandre identifie les leviers fiscaux pour optimiser cette projection.</p>
-      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;">📅 Réserver mon Audit Gratuit →</a>
+      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;" onclick="onCalendlyClick()">📅 Réserver mon Audit Gratuit →</a>
       <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</div>
     </div>
 
@@ -1906,7 +1937,7 @@ function render() {
         <div style="font-size:13px;font-weight:800;color:#fff;margin-bottom:4px;">Ces recommandations sont faites pour toi${prenom && prenom !== 'Vous' ? ', ' + prenom : ''} 👆</div>
         <div style="font-size:12px;color:var(--text2);line-height:1.5;">Score ${score}/100 · En 30 min on transforme ton potentiel de <strong style="color:var(--gold-light);white-space:nowrap;">${fmt(finalWithEpargne)}</strong> en plan d'action concret.</div>
       </div>
-      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">📅 Réserver mon audit gratuit →</a>
+      <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'" onclick="onCalendlyClick()">📅 Réserver mon audit gratuit →</a>
       <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</div>
     </div>
 
