@@ -1224,46 +1224,34 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   // MAILERLITE — inscrire / mettre à jour un subscriber
   // ═══════════════════════════════════════════════════════════
   async function mlUpsertSubscriber(email, fields, groupId) {
-    if (ML_API_KEY === 'INSERE_TA_CLE_MAILERLITE_ICI') return null;
+    const simUrl = window.location.href.split('?')[0]
+      + '?source=tally&email=' + encodeURIComponent(email)
+      + '&prenom=' + encodeURIComponent(fields.prenom || 'Vous')
+      + '&capital=' + (fields.capital || 0)
+      + '&epargne=' + (fields.epargne || 0)
+      + '&objectif=' + (fields.objectif || 5000);
     try {
-      const body = { email, fields: {} };
-      if (fields.prenom)   body.fields.prenom   = fields.prenom;
-      if (fields.capital != null) body.fields.capital  = String(fields.capital);
-      if (fields.epargne != null) body.fields.epargne  = String(fields.epargne);
-      if (fields.objectif != null) body.fields.objectif = String(fields.objectif);
-      body.fields.sim_url = window.location.href.split('?')[0]
-        + '?email=' + encodeURIComponent(email)
-        + '&prenom=' + encodeURIComponent(fields.prenom || 'Vous')
-        + '&capital=' + (fields.capital || 0);
-
-      const res  = await fetch('https://connect.mailerlite.com/api/subscribers', {
+      const res = await fetch('/.netlify/functions/notion', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
-        body: JSON.stringify(body)
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mlUpsertSubscriber',
+          email,
+          fields: { ...fields, sim_url: simUrl },
+          groupId
+        })
       });
-      const sub  = await res.json();
-      const sid  = sub?.data?.id;
-      if (!sid) return null;
-      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
-      });
-      return sid;
+      const data = await res.json();
+      return data?.id || null;
     } catch(e) { console.error('mlUpsertSubscriber', e); return null; }
   }
 
   async function mlRemoveFromGroup(email, groupId) {
-    if (ML_API_KEY === 'INSERE_TA_CLE_MAILERLITE_ICI') return;
     try {
-      const r   = await fetch('https://connect.mailerlite.com/api/subscribers/' + encodeURIComponent(email), {
-        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
-      });
-      const sub = await r.json();
-      const sid = sub?.data?.id;
-      if (!sid) return;
-      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
-        method: 'DELETE',
-        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      await fetch('/.netlify/functions/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'mlRemoveFromGroup', email, groupId })
       });
     } catch(e) { console.error('mlRemoveFromGroup', e); }
   }
