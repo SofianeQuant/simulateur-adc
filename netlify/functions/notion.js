@@ -1,18 +1,18 @@
 const https = require('https');
 
 const NOTION_TOKEN = process.env.NOTION_TOKEN;
+const ML_API_KEY   = process.env.ML_API_KEY;
 
-function notionRequest(method, path, body) {
+function request(hostname, method, path, body, extraHeaders = {}) {
   return new Promise((resolve, reject) => {
     const data = body ? JSON.stringify(body) : null;
     const options = {
-      hostname: 'api.notion.com',
+      hostname,
       path,
       method,
       headers: {
-        'Authorization': 'Bearer ' + NOTION_TOKEN,
         'Content-Type': 'application/json',
-        'Notion-Version': '2022-06-28',
+        ...extraHeaders,
         ...(data ? { 'Content-Length': Buffer.byteLength(data) } : {})
       }
     };
@@ -30,6 +30,20 @@ function notionRequest(method, path, body) {
   });
 }
 
+function notionRequest(method, path, body) {
+  return request('api.notion.com', method, path, body, {
+    'Authorization': 'Bearer ' + NOTION_TOKEN,
+    'Notion-Version': '2022-06-28'
+  });
+}
+
+function mlRequest(method, path, body) {
+  return request('connect.mailerlite.com', method, path, body, {
+    'Authorization': 'Bearer ' + ML_API_KEY,
+    'Accept': 'application/json'
+  });
+}
+
 exports.handler = async (event) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
@@ -44,6 +58,41 @@ exports.handler = async (event) => {
 
   try {
     const { action, ...payload } = JSON.parse(event.body || '{}');
+
+    // ════════════════════════════════════════════════════════
+    // MAILERLITE ACTIONS
+    // ════════════════════════════════════════════════════════
+
+    if (action === 'mlUpsertSubscriber') {
+      const { email, fields, groupId } = payload;
+      const body = {
+        email,
+        fields: {
+          prenom:   fields.prenom   || '',
+          capital:  String(fields.capital  || 0),
+          epargne:  String(fields.epargne  || 0),
+          objectif: String(fields.objectif || 5000),
+          sim_url:  fields.sim_url  || ''
+        },
+        groups: [groupId]
+      };
+      const res = await mlRequest('POST', '/api/subscribers', body);
+      return { statusCode: 200, headers, body: JSON.stringify({ id: res.data?.data?.id || null }) };
+    }
+
+    if (action === 'mlRemoveFromGroup') {
+      const { email, groupId } = payload;
+      const getRes = await mlRequest('GET', '/api/subscribers/' + encodeURIComponent(email), null);
+      const sid = getRes.data?.data?.id;
+      if (sid) {
+        await mlRequest('DELETE', `/api/subscribers/${sid}/groups/${groupId}`, null);
+      }
+      return { statusCode: 200, headers, body: JSON.stringify({ ok: true }) };
+    }
+
+    // ════════════════════════════════════════════════════════
+    // NOTION ACTIONS
+    // ════════════════════════════════════════════════════════
 
     if (action === 'findLead') {
       const { email, dbId } = payload;
