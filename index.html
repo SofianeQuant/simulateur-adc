@@ -1656,11 +1656,18 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
       }
     }
 
-    // 6. Mettre à jour MailerLite (capital à jour)
+    // 6. Mettre à jour MailerLite (capital + sim_url à jour)
+    // Reconstruire sim_url avec le capital total mis à jour
+    const _simParams = getURLParams();
+    _simParams.set('capital', capitalTotal);
+    _simParams.set('prenom', prenom);
+    if (_simParams.get('email')) _simParams.set('source', 'email');
+    const _simUrlUpdated = window.location.origin + window.location.pathname + '?' + _simParams.toString();
     mlUpsertSubscriber(_suiviEmail, {
       prenom,
       capital:  capitalTotal,
-      objectif: data.cible || 5000
+      objectif: data.cible || 5000,
+      sim_url:  _simUrlUpdated
     }, ML_GROUP_LEADS);
   };
 
@@ -1679,7 +1686,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   // AUTO-RESTAURATION — si email dans l'URL, charger depuis Notion
   // ═══════════════════════════════════════════════════════════
   (async function autoRestore() {
-    const params = new URLSearchParams(window.location.search);
+    const params = getURLParams();
     const emailUrl = params.get('email');
     if (!emailUrl) return;
 
