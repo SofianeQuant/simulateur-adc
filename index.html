@@ -486,6 +486,7 @@ header {
 
     <div class="header-right">
       <div class="header-badge"><span class="dot"></span> Analyse en cours</div>
+      <button class="print-btn" id="btn-copier-lien" onclick="copierLienSimulation()" style="background:rgba(75,186,122,0.12);border-color:rgba(75,186,122,0.3);color:#4ABA7A;display:none;">🔗 Copier mon lien</button>
       <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;display:none;">✏️ Modifier ma simulation</button>
     </div>
   </header>
@@ -500,6 +501,8 @@ header {
 </div>
 
 <script>
+// ─── SIMULATION PARAMS (injectés pour prévisualisation) ──────────────────────
+window.__SIM_PARAMS__ = 'prenom=Vous&capital=69500&revenu=2400&epargne=2050&risque=moderee&objectif=performance&personnage=cdi&credit=350&locatif=1450&conjoint=3600&immo=locatif';
 // ─── PROFILS PAR PERSONNAGE ─────────────────────────────────────────────────
 const PROFILS = {
   'cdi':         { label: 'Salarié CDI',                    revenu: 2500, epargne: 400,  depenses: 2100, emoji: '👔' },
@@ -543,7 +546,18 @@ const RISQUE_RATES = {
 
 // ─── PARSE URL ──────────────────────────────────────────────────────────────
 function parseParams() {
-  const p = new URLSearchParams(window.location.search);
+  // Lire depuis ?query, sinon depuis #hash (compatible srcdoc/prévisualisation)
+  let searchStr = window.location.search;
+  if (!searchStr || searchStr === '?') {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#?')) searchStr = '?' + hash.slice(2);
+    else if (hash && hash.startsWith('#')) searchStr = '?' + hash.slice(1);
+  }
+  // Fallback : lire depuis window.__SIM_PARAMS__ injecté dans le HTML
+  if ((!searchStr || searchStr === '?') && window.__SIM_PARAMS__) {
+    searchStr = '?' + window.__SIM_PARAMS__;
+  }
+  const p = new URLSearchParams(searchStr);
 
 
 
@@ -706,6 +720,20 @@ function scorePatrimoine(capital, revenu, epargne, tauxEpargne) {
 let state = {};
 let charts = {};
 
+// ─── HELPER URL PARAMS (compatible srcdoc + hash) ───────────────────────────
+function getURLParams() {
+  let searchStr = window.location.search;
+  if (!searchStr || searchStr === '?') {
+    const hash = window.location.hash;
+    if (hash && hash.startsWith('#?')) searchStr = '?' + hash.slice(2);
+    else if (hash && hash.startsWith('#')) searchStr = '?' + hash.slice(1);
+  }
+  if ((!searchStr || searchStr === '?') && window.__SIM_PARAMS__) {
+    searchStr = '?' + window.__SIM_PARAMS__;
+  }
+  return new URLSearchParams(searchStr);
+}
+
 // ─── SYNC URL (snapshot simulation) ─────────────────────────────────────────
 // ═══════════════════════════════════════════════════════════
 // CONFIG GLOBALE
@@ -731,9 +759,119 @@ async function notionProxy(action, payload) {
 // Debounce timer pour la sauvegarde automatique
 let _saveSimTimer = null;
 
+// ─── COPIER LE LIEN DE SIMULATION ────────────────────────────────────────────
+function buildFullSimUrl() {
+  const params = getURLParams();
+  params.set('prenom', state.prenom || 'Vous');
+  params.set('capital', state.capital || 0);
+  params.set('revenu', state.revenu || 0);
+  params.set('epargne', state.epargne || 0);
+  params.set('risque', state.risque || 'moderee');
+  params.set('objectif', state.objectif || 'performance');
+  params.set('personnage', state.personnage || 'cdi');
+  if (state.creditEnCours) params.set('credit', state.creditEnCours);
+  if (state.revenuLocatif) params.set('locatif', state.revenuLocatif);
+  if (state.revenuConjoint) params.set('conjoint', state.revenuConjoint);
+  if (state.immoType) params.set('immo', state.immoType);
+  // Toujours marquer source=email pour que les retours depuis mail soient sauvegardés
+  if (params.get('email')) params.set('source', 'email');
+  return window.location.origin + window.location.pathname + '?' + params.toString();
+}
+
+function copierLienSimulation() {
+  updateSimURL();
+  const url = buildFullSimUrl();
+  const btn = document.getElementById('btn-copier-lien');
+
+  // Toggle popup
+  let popup = document.getElementById('lien-popup');
+  if (popup) { popup.remove(); return; }
+
+  popup = document.createElement('div');
+  popup.id = 'lien-popup';
+  popup.style.cssText = 'position:fixed;bottom:80px;right:16px;z-index:9999;background:#1C1C1E;border:1px solid rgba(75,186,122,0.4);border-radius:12px;padding:16px;max-width:340px;width:calc(100vw - 32px);box-shadow:0 8px 32px rgba(0,0,0,0.5);';
+
+  var style = document.createElement('style');
+  style.textContent = '@keyframes slideUpLien{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}';
+  document.head.appendChild(style);
+  popup.style.animation = 'slideUpLien .2s ease';
+
+  var header = document.createElement('div');
+  header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
+
+  var title = document.createElement('span');
+  title.style.cssText = 'font-size:12px;font-weight:700;color:#4ABA7A;letter-spacing:.06em;text-transform:uppercase;';
+  title.textContent = '🔗 Lien de ta simulation';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.style.cssText = 'background:none;border:none;color:#5A6070;cursor:pointer;font-size:16px;line-height:1;padding:0 2px;';
+  closeBtn.textContent = '✕';
+  closeBtn.onclick = function() { popup.remove(); };
+
+  header.appendChild(title);
+  header.appendChild(closeBtn);
+  popup.appendChild(header);
+
+  var row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:8px;align-items:stretch;';
+
+  var inp = document.createElement('input');
+  inp.id = 'lien-url-input';
+  inp.readOnly = true;
+  inp.value = url;
+  inp.style.cssText = 'flex:1;min-width:0;background:#111112;border:1px solid #2A2A2E;border-radius:7px;padding:8px 10px;color:#A0A8B4;font-size:11px;font-family:DM Sans,sans-serif;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;';
+
+  var copyBtn = document.createElement('button');
+  copyBtn.id = 'lien-copy-btn';
+  copyBtn.style.cssText = 'flex-shrink:0;background:rgba(75,186,122,0.15);border:1px solid rgba(75,186,122,0.4);color:#4ABA7A;border-radius:7px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:DM Sans,sans-serif;white-space:nowrap;transition:all .2s;';
+  copyBtn.textContent = 'Copier';
+  copyBtn.onclick = function() { executeCopierLien(url); };
+
+  row.appendChild(inp);
+  row.appendChild(copyBtn);
+  popup.appendChild(row);
+
+  var note = document.createElement('p');
+  note.style.cssText = 'font-size:10px;color:#5A6070;margin-top:8px;line-height:1.4;';
+  note.textContent = 'Ce lien restaure exactement ta simulation — capital, revenus, épargne, profil, crédit, locatif et conjoint inclus.';
+  popup.appendChild(note);
+
+  document.body.appendChild(popup);
+
+  // Fermer au clic extérieur
+  setTimeout(function() {
+    document.addEventListener('click', function closePopup(e) {
+      if (!popup.contains(e.target) && e.target !== btn) {
+        popup.remove();
+        document.removeEventListener('click', closePopup);
+      }
+    });
+  }, 100);
+}
+
+function executeCopierLien(url) {
+  const copyBtn = document.getElementById('lien-copy-btn');
+  navigator.clipboard.writeText(url).then(() => {
+    if (copyBtn) { copyBtn.textContent = '✅ Copié !'; copyBtn.style.color = '#4ABA7A'; }
+    setTimeout(() => {
+      const p = document.getElementById('lien-popup');
+      if (p) p.remove();
+    }, 1500);
+  }).catch(() => {
+    // Fallback
+    const inp = document.getElementById('lien-url-input');
+    if (inp) { inp.select(); document.execCommand('copy'); }
+    if (copyBtn) { copyBtn.textContent = '✅ Copié !'; }
+    setTimeout(() => {
+      const p = document.getElementById('lien-popup');
+      if (p) p.remove();
+    }, 1500);
+  });
+}
+
 function updateSimURL() {
   if (!state.prenom) return;
-  const params = new URLSearchParams(window.location.search);
+  const params = getURLParams();
   params.set('prenom', state.prenom);
   params.set('capital', state.capital);
   params.set('revenu', state.revenu);
@@ -744,18 +882,19 @@ function updateSimURL() {
   params.set('risque', state.risque);
   params.set('objectif', state.objectif);
   params.set('personnage', state.personnage);
+  params.set('immo', state.immoType || 'rp');
+  // Toujours marquer source=email si email présent
+  if (params.get('email') && !params.get('source')) params.set('source', 'email');
   try {
     const newURL = window.location.pathname + '?' + params.toString();
     window.history.replaceState({}, '', newURL);
   } catch(e) {}
 
-  // Sauvegarde automatique dans MailerLite + Notion après 2 secondes
-  const urlParams = new URLSearchParams(window.location.search);
+  // Sauvegarde automatique dans MailerLite + Notion après modification
+  const urlParams = getURLParams();
   const email = urlParams.get('email');
   if (!email) return;
-  // Sauvegarder si source=tally OU source=email (retour depuis mail)
-  const source = urlParams.get('source');
-  if (source !== 'tally' && source !== 'email') return;
+  // Sauvegarder dès qu'un email est présent dans l'URL (tally, email, ou modification manuelle)
 
   clearTimeout(_saveSimTimer);
   _saveSimTimer = setTimeout(async () => {
@@ -779,7 +918,7 @@ function updateSimURL() {
         body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
       });
     } catch(e) {}
-  }, 30000); // debounce 30s — optimisation crédits Netlify
+  }, 3000); // debounce 3s après modification
 }
 
 function copySimLink() {
@@ -2433,8 +2572,8 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif, revenuCo
 
           <!-- Toggle RP / Locatif -->
           <div style="display:flex;gap:8px;margin-bottom:14px;">
-            <button onclick="document.getElementById('rv-rp').style.display='block';document.getElementById('rv-loc').style.display='none';this.style.background='rgba(200,150,62,0.2)';this.style.borderColor='var(--gold)';this.style.color='var(--gold-light)';document.getElementById('btn-loc').style.background='var(--bg4)';document.getElementById('btn-loc').style.borderColor='var(--border)';document.getElementById('btn-loc').style.color='var(--text3)';state.immoType='rp';" id="btn-rp" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(200,150,62,0.2);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">🏡 Résidence principale</button>
-            <button onclick="document.getElementById('rv-rp').style.display='none';document.getElementById('rv-loc').style.display='block';this.style.background='rgba(75,186,122,0.15)';this.style.borderColor='var(--green-light)';this.style.color='var(--green-light)';document.getElementById('btn-rp').style.background='var(--bg4)';document.getElementById('btn-rp').style.borderColor='var(--border)';document.getElementById('btn-rp').style.color='var(--text3)';state.immoType='locatif';" id="btn-loc" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:var(--text3);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">💰 Investissement locatif</button>
+            <button onclick="document.getElementById('rv-rp').style.display='block';document.getElementById('rv-loc').style.display='none';this.style.background='rgba(200,150,62,0.2)';this.style.borderColor='var(--gold)';this.style.color='var(--gold-light)';document.getElementById('btn-loc').style.background='var(--bg4)';document.getElementById('btn-loc').style.borderColor='var(--border)';document.getElementById('btn-loc').style.color='var(--text3)';state.immoType='rp';updateSimURL();updateCalendlyLinks();" id="btn-rp" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(200,150,62,0.2);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">🏡 Résidence principale</button>
+            <button onclick="document.getElementById('rv-rp').style.display='none';document.getElementById('rv-loc').style.display='block';this.style.background='rgba(75,186,122,0.15)';this.style.borderColor='var(--green-light)';this.style.color='var(--green-light)';document.getElementById('btn-rp').style.background='var(--bg4)';document.getElementById('btn-rp').style.borderColor='var(--border)';document.getElementById('btn-rp').style.color='var(--text3)';state.immoType='locatif';updateSimURL();updateCalendlyLinks();" id="btn-loc" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:var(--text3);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">💰 Investissement locatif</button>
           </div>
 
           <!-- RP Panel -->
@@ -2892,9 +3031,12 @@ function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
   document.getElementById('btn-modifier').textContent = '✕ Fermer';
   const panelHtml = `<div id="modifier-panel" style="background:var(--bg2);border:1px solid rgba(200,150,62,0.35);border-radius:14px;padding:16px;margin:16px 0 0;position:relative;z-index:10;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:8px;">
       <h4 style="font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:0;">✏️ Modifier la simulation <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">Les modifications sont appliquées en temps réel</span></h4>
-      <button onclick="toggleModifier()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1;transition:color .2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text3)'">✕</button>
+      <div style="display:flex;align-items:center;gap:12px;">
+        <span id="mod-save-feedback" style="font-size:11px;font-weight:600;transition:opacity .4s;opacity:0;"></span>
+        <button onclick="toggleModifier()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1;transition:color .2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text3)'">✕</button>
+      </div>
     </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
       <div>
@@ -2941,6 +3083,16 @@ function toggleModifier() {
   _showModifierPanel();
 }
 
+function _showSaveFeedback(msg, color) {
+  let el = document.getElementById('mod-save-feedback');
+  if (!el) return;
+  el.textContent = msg;
+  el.style.color = color || 'var(--green-light)';
+  el.style.opacity = '1';
+  clearTimeout(el._hideTimer);
+  el._hideTimer = setTimeout(() => { el.style.opacity = '0'; }, 3500);
+}
+
 function applyModif(force) {
   const p = document.getElementById('mod-prenom');
   const c = document.getElementById('mod-capital');
@@ -2961,7 +3113,16 @@ function applyModif(force) {
   charts = {};
   render();
   // updateSimURL après que render() ait fini (render a un setTimeout interne de 50ms)
-  setTimeout(() => { updateSimURL(); updateCalendlyLinks(); }, 150);
+  setTimeout(() => {
+    updateSimURL();
+    updateCalendlyLinks();
+    // Afficher le feedback de sauvegarde si email présent
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('email')) {
+      _showSaveFeedback('⏳ Sauvegarde en cours…', 'var(--gold-light)');
+      setTimeout(() => _showSaveFeedback('✅ Modifications enregistrées', 'var(--green-light)'), 3200);
+    }
+  }, 150);
   // Re-inject panel after render (panel was wiped by render)
   setTimeout(() => {
     if (!document.getElementById('modifier-panel')) {
@@ -3037,11 +3198,25 @@ document.addEventListener('visibilitychange', () => {
 window.addEventListener('DOMContentLoaded', () => {
   const parsed = parseParams();
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
-  state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne, creditEnCours: 0, revenuLocatif: 0 };
+  // Lire revenu/épargne/credit/locatif/conjoint depuis l'URL si présents, sinon profil par défaut
+  const _p = getURLParams();
+  const _revenuUrl   = parseInt(_p.get('revenu'))   || 0;
+  const _epargneUrl  = parseInt(_p.get('epargne'))  || 0;
+  const _creditUrl   = parseInt(_p.get('credit'))   || 0;
+  const _locatifUrl  = parseInt(_p.get('locatif'))  || 0;
+  const _conjointUrl = parseInt(_p.get('conjoint')) || 0;
+  state = {
+    ...parsed,
+    revenu:        _revenuUrl  || profil.revenu,
+    epargne:       _epargneUrl || profil.epargne,
+    creditEnCours: _creditUrl,
+    revenuLocatif: _locatifUrl,
+    revenuConjoint:_conjointUrl
+  };
   render();
 
   // Initialiser l'onglet immo depuis l'URL si immo=locatif
-  const _immoParam = new URLSearchParams(window.location.search).get('immo');
+  const _immoParam = getURLParams().get('immo');
   if (_immoParam === 'locatif') {
     state.immoType = 'locatif';
     setTimeout(() => {
@@ -3058,7 +3233,9 @@ window.addEventListener('DOMContentLoaded', () => {
   }
 
   // Afficher "Modifier ma simulation" uniquement si email dans l'URL
-  const _urlP = new URLSearchParams(window.location.search);
+  // Afficher "Copier mon lien" toujours si des paramètres sont présents
+  const _urlP = getURLParams();
+
   if (_urlP.get('email')) {
     const btnMod = document.getElementById('btn-modifier');
     if (btnMod) btnMod.style.display = '';
@@ -3067,7 +3244,7 @@ window.addEventListener('DOMContentLoaded', () => {
   // ─── MAILERLITE AUTO-INSCRIPTION ─────────────────────────────────────────
   // Déclenché uniquement si le lead arrive depuis Tally (source=tally dans l'URL)
   // ou si email est passé en paramètre URL
-  const urlParams = new URLSearchParams(window.location.search);
+  const urlParams = getURLParams();
   const email = urlParams.get('email');
   const source = urlParams.get('source');
 
