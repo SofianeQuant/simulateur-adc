@@ -1416,32 +1416,32 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     const emailField = document.getElementById('suivi-email');
     if (emailField) emailField.value = emailUrl;
 
-    
-
     // Charger les versements depuis Notion
     const versementsNotion = await notionLoadVersements(emailUrl);
-    if (Object.keys(versementsNotion).length === 0) return;
 
-    // Charger les infos du lead
+    // Charger les infos du lead depuis Notion
     const lead = await notionFindLead(emailUrl);
-    const capitalDepart = lead?.properties?.['Capital départ']?.number || 0;
-    const cible         = lead?.properties?.['Objectif cible']?.number || 5000;
-    const prenomNotion  = lead?.properties?.['Prénom']?.title?.[0]?.plain_text || state.prenom || 'Vous';
+    const capitalDepart = lead?.properties?.['Capital départ']?.number || parseInt(params.get('capital')) || 0;
+    const cible         = lead?.properties?.['Objectif cible']?.number || parseInt(params.get('objectif')) || 5000;
+    const prenomNotion  = lead?.properties?.['Prénom']?.title?.[0]?.plain_text || params.get('prenom') || state.prenom || 'Vous';
 
     // Fusionner avec le localStorage
     const dataLocal = getSuiviData(emailUrl);
-    const data = {
-      email:      emailUrl,
-      prenom:     prenomNotion,
-      capital:    capitalDepart,
-      cible:      cible,
-      versements: Object.assign({}, dataLocal.versements, versementsNotion),
-    };
-    saveSuiviData(data);
-    try { localStorage.setItem('adc_suivi_last_email', emailUrl); } catch(e) {}
+    const versementsFusionnes = Object.assign({}, dataLocal.versements, versementsNotion);
 
-    // Afficher directement le tableau de suivi
-    renderSuiviActif(emailUrl);
+    // Si données trouvées (Notion ou localStorage) → afficher le suivi directement
+    if (lead || Object.keys(versementsFusionnes).length > 0 || capitalDepart > 0) {
+      const data = {
+        email:      emailUrl,
+        prenom:     prenomNotion,
+        capital:    capitalDepart,
+        cible:      cible,
+        versements: versementsFusionnes,
+      };
+      saveSuiviData(data);
+      try { localStorage.setItem('adc_suivi_last_email', emailUrl); } catch(e) {}
+      renderSuiviActif(emailUrl);
+    }
   })();
 
   // ── Initialisation directe du tracker ──
