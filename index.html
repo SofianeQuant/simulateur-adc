@@ -1370,7 +1370,36 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
 
   function saveSuiviData(data) {
     try { localStorage.setItem(STORAGE_KEY_PREFIX + data.email, JSON.stringify(data)); } catch(e) {}
+    // Encoder les versements dans sim_url pour persistance cross-device
+    _syncVersementsToURL(data);
   }
+
+  function _syncVersementsToURL(data) {
+    if (!data.email) return;
+    const params = getURLParams();
+    if (!params.get('email')) return;
+    // Encoder versements : "2026-03:340,2026-04:200"
+    const vStr = Object.entries(data.versements || {})
+      .map(([k, v]) => k + ':' + v).join(',');
+    if (vStr) params.set('versements', vStr);
+    else params.delete('versements');
+    params.set('capital', data.capital || 0);
+    params.set('source', 'email');
+    try {
+      window.history.replaceState({}, '', window.location.pathname + '?' + params.toString());
+    } catch(e) {}
+    // Mettre à jour sim_url dans MailerLite
+    clearTimeout(_syncVersementsTimer);
+    _syncVersementsTimer = setTimeout(() => {
+      const simUrl = window.location.origin + window.location.pathname + '?' + params.toString();
+      fetch('https://connect.mailerlite.com/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify({ email: data.email, fields: { sim_url: simUrl, capital: String(data.capital || 0) } })
+      }).catch(() => {});
+    }, 2000);
+  }
+  let _syncVersementsTimer = null;
 
   function getMoisOptions() {
     const opts = [];
@@ -1703,9 +1732,18 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     const cible         = lead?.properties?.['Objectif cible']?.number || parseInt(params.get('objectif')) || 5000;
     const prenomNotion  = lead?.properties?.['Prénom']?.title?.[0]?.plain_text || params.get('prenom') || state.prenom || 'Vous';
 
-    // Fusionner avec le localStorage
+    // Lire versements depuis l'URL si présents (persistance cross-device)
+    const vParam = params.get('versements');
+    const versementsURL = {};
+    if (vParam) {
+      vParam.split(',').forEach(entry => {
+        const [k, v] = entry.split(':');
+        if (k && v) versementsURL[k] = parseFloat(v);
+      });
+    }
+    // Fusionner URL + localStorage + Notion (Notion prioritaire)
     const dataLocal = getSuiviData(emailUrl);
-    const versementsFusionnes = Object.assign({}, dataLocal.versements, versementsNotion);
+    const versementsFusionnes = Object.assign({}, versementsURL, dataLocal.versements, versementsNotion);
 
     // Si données trouvées (Notion ou localStorage) → afficher le suivi directement
     if (lead || Object.keys(versementsFusionnes).length > 0 || capitalDepart > 0) {
