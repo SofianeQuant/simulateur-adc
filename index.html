@@ -707,6 +707,9 @@ let state = {};
 let charts = {};
 
 // ─── SYNC URL (snapshot simulation) ─────────────────────────────────────────
+// Debounce timer pour la sauvegarde automatique
+let _saveSimTimer = null;
+
 function updateSimURL() {
   if (!state.prenom) return;
   const params = new URLSearchParams(window.location.search);
@@ -723,9 +726,55 @@ function updateSimURL() {
   try {
     const newURL = window.location.pathname + '?' + params.toString();
     window.history.replaceState({}, '', newURL);
-  } catch(e) {
-    // Environnement iframe/srcdoc — on ignore silencieusement
-  }
+  } catch(e) {}
+
+  // Sauvegarde automatique dans MailerLite + Notion après 2 secondes
+  const urlParams = new URLSearchParams(window.location.search);
+  const email = urlParams.get('email');
+  if (!email) return;
+
+  clearTimeout(_saveSimTimer);
+  _saveSimTimer = setTimeout(async () => {
+    const simUrl = window.location.href;
+    // Mise à jour MailerLite
+    try {
+      await fetch('/.netlify/functions/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'mlUpsertSubscriber',
+          email,
+          fields: {
+            prenom:   state.prenom,
+            capital:  state.capital,
+            epargne:  state.epargne,
+            objectif: state.capital >= 5000 ? state.capital : 5000,
+            sim_url:  simUrl
+          },
+          groupId: state.capital >= 5000 ? '182059741376152834' : '182023504020899604'
+        })
+      });
+    } catch(e) {}
+    // Mise à jour Notion
+    try {
+      await fetch('/.netlify/functions/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsertLead',
+          email,
+          fields: {
+            prenom:   state.prenom,
+            capital:  state.capital,
+            epargne:  state.epargne,
+            cible:    state.capital >= 5000 ? state.capital : 5000,
+            simUrl:   simUrl
+          },
+          dbId: 'd3d17b01-f2c0-4548-917a-818926180265'
+        })
+      });
+    } catch(e) {}
+  }, 2000);
 }
 
 function copySimLink() {
