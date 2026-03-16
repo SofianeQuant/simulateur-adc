@@ -718,7 +718,7 @@ const NOTION_DB_VERSEMENTS_GLOBAL  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';
 
 async function notionProxy(action, payload) {
   try {
-    const res = await fetch('/.netlify/functions/notion', {
+    const res = await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action, ...payload })
@@ -770,7 +770,7 @@ function updateSimURL() {
 
     // Notion — 1 seul appel Function (obligatoire cause CORS Notion)
     try {
-      await fetch('/.netlify/functions/notion', {
+      await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
@@ -810,7 +810,7 @@ async function onCalendlyClick() {
   } catch(e) {}
   // Notion via Netlify Function
   try {
-    await fetch('/.netlify/functions/notion', {
+    await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
@@ -1266,11 +1266,11 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   const NOTION_DB_VERSEMENTS  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';
 
   // ═══════════════════════════════════════════════════════════
-  // NOTION PROXY — tous les appels passent par /.netlify/functions/notion
+  // NOTION PROXY — tous les appels passent par https://adc-proxy.sofiane-didi.workers.dev
   // ═══════════════════════════════════════════════════════════
   async function notionProxy(action, payload) {
     try {
-      const res = await fetch('/.netlify/functions/notion', {
+      const res = await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action, ...payload })
@@ -3037,7 +3037,7 @@ async function registerToMailerLite(email, data) {
   // Notion — 1 seul appel Function uniquement si capital >= 5k (lead chaud)
   if (capital >= 5000) {
     try {
-      await fetch('/.netlify/functions/notion', {
+      await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: data.prenom || 'Vous', capital, epargne, cible: objectif, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
