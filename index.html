@@ -792,24 +792,39 @@ async function onCalendlyClick() {
   const params = new URLSearchParams(window.location.search);
   const email = params.get('email');
   if (!email) return;
-  // Forcer la mise à jour de l'URL avec les sliders actuels avant de sauvegarder
-  updateSimURL();
-  const simUrl = window.location.href;
-  // Annuler le debounce en cours et sauvegarder immédiatement
   clearTimeout(_saveSimTimer);
+
+  // Construire le simUrl complet depuis state — toutes les données slider actuelles
+  const base = window.location.origin + window.location.pathname;
+  const simUrl = base
+    + '?source=tally'
+    + '&email=' + encodeURIComponent(email)
+    + '&prenom=' + encodeURIComponent(state.prenom || '')
+    + '&personnage=' + encodeURIComponent(state.personnage || 'cdi')
+    + '&capital=' + (state.capital || 0)
+    + '&risque=' + encodeURIComponent(state.risque || 'moderee')
+    + '&objectif=' + encodeURIComponent(state.objectif || 'performance')
+    + '&revenu=' + (state.revenu || 0)
+    + '&epargne=' + (state.epargne || 0)
+    + (state.creditEnCours ? '&credit=' + state.creditEnCours : '')
+    + (state.revenuLocatif ? '&locatif=' + state.revenuLocatif : '')
+    + (state.revenuConjoint ? '&conjoint=' + state.revenuConjoint : '');
   const GROUP_5K = '182059741376152834';
-  // MailerLite direct
+  // MailerLite — ÉTAPE 1 : mettre à jour sim_url d'abord
   try {
-    const res = await fetch('https://connect.mailerlite.com/api/subscribers', {
+    const res1 = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
       body: JSON.stringify({ email, fields: { prenom: state.prenom, capital: String(state.capital), epargne: String(state.epargne), sim_url: simUrl } })
     });
-    const sub = await res.json();
-    const sid = sub?.data?.id;
+    const sub1 = await res1.json();
+    const sid = sub1?.data?.id;
     if (sid) {
+      // ÉTAPE 2 : retirer du groupe puis réajouter APRÈS que sim_url est enregistré
       try { await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + ML_API_KEY } }); } catch(e) {}
-      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'POST', headers: { 'Authorization': 'Bearer ' + ML_API_KEY } });
+      // Attendre 500ms pour que MailerLite propage les champs
+      await new Promise(r => setTimeout(r, 500));
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY } });
     }
   } catch(e) {}
   // Notion via Netlify Function
