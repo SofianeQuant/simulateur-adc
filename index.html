@@ -753,6 +753,9 @@ function updateSimURL() {
   const urlParams = new URLSearchParams(window.location.search);
   const email = urlParams.get('email');
   if (!email) return;
+  // Sauvegarder si source=tally OU source=email (retour depuis mail)
+  const source = urlParams.get('source');
+  if (source !== 'tally' && source !== 'email') return;
 
   clearTimeout(_saveSimTimer);
   _saveSimTimer = setTimeout(async () => {
@@ -794,13 +797,18 @@ async function onCalendlyClick() {
   if (!email) return;
   clearTimeout(_saveSimTimer);
 
-  // Lire les valeurs directement depuis les inputs DOM (plus fiable que state)
-  const revenu    = parseInt(document.getElementById('inp-revenu')?.value)    || state.revenu    || 0;
-  const epargne   = parseInt(document.getElementById('inp-epargne')?.value)   || state.epargne   || 0;
-  const capital   = parseInt(document.getElementById('inp-capital')?.value)   || state.capital   || 0;
-  const credit    = parseInt(document.getElementById('inp-credit')?.value)    || state.creditEnCours  || 0;
-  const locatif   = parseInt(document.getElementById('inp-locatif')?.value)   || state.revenuLocatif  || 0;
-  const conjoint  = parseInt(document.getElementById('inp-conjoint')?.value)  || state.revenuConjoint || 0;
+  // Utiliser state (toujours à jour par les sliders) + DOM comme fallback
+  const getVal = (id, stateVal) => {
+    const el = document.getElementById(id);
+    const domVal = el ? parseInt(el.value) : NaN;
+    return (!isNaN(domVal) && domVal > 0) ? domVal : (stateVal || 0);
+  };
+  const revenu   = getVal('inp-revenu',   state.revenu);
+  const epargne  = getVal('inp-epargne',  state.epargne);
+  const capital  = getVal('inp-capital',  state.capital);
+  const credit   = state.creditEnCours  || getVal('inp-credit',   0);
+  const locatif  = state.revenuLocatif  || getVal('inp-locatif',  0);
+  const conjoint = state.revenuConjoint || getVal('inp-conjoint', 0);
 
   const base = window.location.origin + window.location.pathname;
   const simUrl = base
@@ -815,7 +823,8 @@ async function onCalendlyClick() {
     + '&epargne=' + epargne
     + (credit  ? '&credit='   + credit   : '')
     + (locatif  ? '&locatif='  + locatif  : '')
-    + (conjoint ? '&conjoint=' + conjoint : '');
+    + (conjoint ? '&conjoint=' + conjoint : '')
+    + (state.immoType ? '&immo=' + state.immoType : '');
   const GROUP_5K = '182059741376152834';
   // MailerLite — ÉTAPE 1 : mettre à jour sim_url d'abord
   try {
@@ -832,7 +841,8 @@ async function onCalendlyClick() {
         credit:     credit,
         locatif:    locatif,
         conjoint:   conjoint,
-        sim_url:    simUrl
+        sim_url:    simUrl,
+        immo_type:  state.immoType || 'rp'
       }})
     });
     const sub1 = await res1.json();
@@ -2416,8 +2426,8 @@ function renderImmoBlock(revenu, creditEnCours, capital, revenuLocatif, revenuCo
 
           <!-- Toggle RP / Locatif -->
           <div style="display:flex;gap:8px;margin-bottom:14px;">
-            <button onclick="document.getElementById('rv-rp').style.display='block';document.getElementById('rv-loc').style.display='none';this.style.background='rgba(200,150,62,0.2)';this.style.borderColor='var(--gold)';this.style.color='var(--gold-light)';document.getElementById('btn-loc').style.background='var(--bg4)';document.getElementById('btn-loc').style.borderColor='var(--border)';document.getElementById('btn-loc').style.color='var(--text3)';" id="btn-rp" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(200,150,62,0.2);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">🏡 Résidence principale</button>
-            <button onclick="document.getElementById('rv-rp').style.display='none';document.getElementById('rv-loc').style.display='block';this.style.background='rgba(75,186,122,0.15)';this.style.borderColor='var(--green-light)';this.style.color='var(--green-light)';document.getElementById('btn-rp').style.background='var(--bg4)';document.getElementById('btn-rp').style.borderColor='var(--border)';document.getElementById('btn-rp').style.color='var(--text3)';" id="btn-loc" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:var(--text3);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">💰 Investissement locatif</button>
+            <button onclick="document.getElementById('rv-rp').style.display='block';document.getElementById('rv-loc').style.display='none';this.style.background='rgba(200,150,62,0.2)';this.style.borderColor='var(--gold)';this.style.color='var(--gold-light)';document.getElementById('btn-loc').style.background='var(--bg4)';document.getElementById('btn-loc').style.borderColor='var(--border)';document.getElementById('btn-loc').style.color='var(--text3)';state.immoType='rp';" id="btn-rp" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--gold);background:rgba(200,150,62,0.2);color:var(--gold-light);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">🏡 Résidence principale</button>
+            <button onclick="document.getElementById('rv-rp').style.display='none';document.getElementById('rv-loc').style.display='block';this.style.background='rgba(75,186,122,0.15)';this.style.borderColor='var(--green-light)';this.style.color='var(--green-light)';document.getElementById('btn-rp').style.background='var(--bg4)';document.getElementById('btn-rp').style.borderColor='var(--border)';document.getElementById('btn-rp').style.color='var(--text3)';state.immoType='locatif';" id="btn-loc" style="flex:1;padding:8px;border-radius:7px;border:1px solid var(--border);background:var(--bg4);color:var(--text3);font-family:'DM Sans',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;">💰 Investissement locatif</button>
           </div>
 
           <!-- RP Panel -->
@@ -3022,6 +3032,23 @@ window.addEventListener('DOMContentLoaded', () => {
   const profil = PROFILS[parsed.personnage] || PROFILS['cdi'];
   state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne, creditEnCours: 0, revenuLocatif: 0 };
   render();
+
+  // Initialiser l'onglet immo depuis l'URL si immo=locatif
+  const _immoParam = new URLSearchParams(window.location.search).get('immo');
+  if (_immoParam === 'locatif') {
+    state.immoType = 'locatif';
+    setTimeout(() => {
+      const btnLoc = document.getElementById('btn-loc');
+      const btnRp  = document.getElementById('btn-rp');
+      const rvLoc  = document.getElementById('rv-loc');
+      const rvRp   = document.getElementById('rv-rp');
+      if (btnLoc && btnRp && rvLoc && rvRp) {
+        btnLoc.click();
+      }
+    }, 300);
+  } else {
+    state.immoType = 'rp';
+  }
 
   // Afficher "Modifier ma simulation" uniquement si email dans l'URL
   const _urlP = new URLSearchParams(window.location.search);
