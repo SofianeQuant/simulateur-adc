@@ -815,7 +815,18 @@ async function onCalendlyClick() {
     const res1 = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
-      body: JSON.stringify({ email, fields: { prenom: state.prenom, capital: String(state.capital), epargne: String(state.epargne), sim_url: simUrl } })
+      body: JSON.stringify({ email, fields: {
+        prenom:     state.prenom || '',
+        capital:    String(state.capital || 0),
+        epargne:    String(state.epargne || 0),
+        revenu:     state.revenu || 0,
+        risque:     state.risque || 'moderee',
+        personnage: state.personnage || 'cdi',
+        credit:     state.creditEnCours || 0,
+        locatif:    state.revenuLocatif || 0,
+        conjoint:   state.revenuConjoint || 0,
+        sim_url:    simUrl
+      }})
     });
     const sub1 = await res1.json();
     const sid = sub1?.data?.id;
