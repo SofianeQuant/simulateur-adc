@@ -792,7 +792,11 @@ async function onCalendlyClick() {
   const params = new URLSearchParams(window.location.search);
   const email = params.get('email');
   if (!email) return;
+  // Forcer la mise à jour de l'URL avec les sliders actuels avant de sauvegarder
+  updateSimURL();
   const simUrl = window.location.href;
+  // Annuler le debounce en cours et sauvegarder immédiatement
+  clearTimeout(_saveSimTimer);
   const GROUP_5K = '182059741376152834';
   // MailerLite direct
   try {
