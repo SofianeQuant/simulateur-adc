@@ -852,6 +852,13 @@ async function onCalendlyClick() {
       try { await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + ML_API_KEY } }); } catch(e) {}
       // Attendre 3s pour que MailerLite propage bien les champs avant l'envoi
       await new Promise(r => setTimeout(r, 3000));
+      // Vérifier que sim_url est bien mis à jour avant d'ajouter au groupe
+      await fetch('https://connect.mailerlite.com/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify({ email, fields: { sim_url: simUrl, epargne: String(epargne), revenu: revenu } })
+      });
+      await new Promise(r => setTimeout(r, 1000));
       await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY } });
     }
   } catch(e) {}
@@ -3104,15 +3111,15 @@ async function registerToMailerLite(email, data) {
   const manque   = Math.max(0, objectif - capital);
   const horizon  = manque <= 0 ? 0 : Math.ceil(manque / epargne);
 
-  // URL de simulation personnalisée
-  const simUrl = getSimUrl();
+  // URL de simulation = l'URL complète de la page (contient toutes les vraies données Tally)
+  const simUrl = window.location.href;
 
-  // Leads ≥ 5k → groupe analyse patrimoniale + email simulation
+  // Leads ≥ 5k → NE PAS inscrire ici — onCalendlyClick s'en charge au clic CTA
   // Leads < 5k → groupe selon horizon épargne
+  if (capital >= 5000) return; // ≥5k géré par onCalendlyClick
+
   let groupId;
-  if (capital >= 5000) {
-    groupId = GROUPS.analyse;
-  } else if (horizon <= 0)       groupId = GROUPS.objectif;
+  if (horizon <= 0)       groupId = GROUPS.objectif;
   else if (horizon <= 6)  groupId = GROUPS.court;
   else if (horizon <= 12) groupId = GROUPS.moyen;
   else                    groupId = GROUPS.long;
