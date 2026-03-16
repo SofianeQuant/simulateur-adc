@@ -2966,23 +2966,20 @@ async function registerToMailerLite(email, data) {
   else                    groupId = GROUPS.long;
 
   try {
-    await fetch('https://connect.mailerlite.com/api/subscribers', {
+    await fetch('/.netlify/functions/notion', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + MAILERLITE_API_KEY,
-        'Accept': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: email,
+        action: 'mlUpsertSubscriber',
+        email,
         fields: {
-          prenom:   data.prenom  || '',
+          prenom:   data.prenom || '',
           capital:  capital,
           epargne:  epargne,
           objectif: objectif,
           sim_url:  simUrl
         },
-        groups: [groupId]
+        groupId
       })
     });
   } catch(e) {
