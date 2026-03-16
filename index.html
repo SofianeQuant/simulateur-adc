@@ -707,6 +707,27 @@ let state = {};
 let charts = {};
 
 // ─── SYNC URL (snapshot simulation) ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// CONFIG GLOBALE
+// ═══════════════════════════════════════════════════════════
+const ML_API_KEY            = 'eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiI0IiwianRpIjoiNDYwZmQxOGZlMzdlZjE4N2MwY2M5Y2UxNzg2N2FkOWVkYjRhMWU4MGQ2OTgxNDk0MDhmYWI0NjRhZDg2NThjZGFmNjJiNGJkZDUwODlkZGIiLCJpYXQiOjE3NzM2MDE1MTQuNzA0ODY2LCJuYmYiOjE3NzM2MDE1MTQuNzA0ODY5LCJleHAiOjQ5MjkyNzUxMTQuNjk2MzMzLCJzdWIiOiIyMjEyNTk4Iiwic2NvcGVzIjpbXX0.EuEfGNgMDOwabmIOz0loJVYURwn26shXSZYDlw8m06Ya7DZrmGacYwEw9_Fs7Ms3sYHhx5Lf3bmPggPgvjpHCo3pbCqHxOXtGt9IoUNr7FY8fvn88y1x3B71ymmzBZRscDhLPt_kDhBDChvzMO79ec5RgmY27TcpknFTjSmZ3j6jjgRlVDnKeoWjuJk2QRnc3Rh-AGWfcV17VCHq9uD9H900D2ItA4CIhFXe4KnCcO8PbXJP5oLEuxf6QHYb8cTYKrY5QwDf_x-I3-3h4r9y5HH_uvIHp8EyH5Oka6huoOK-XstXlhE2SpMS2nGUIRVzX4tu6uxt1upDbVooNlbBXft7pmCZkaDmxahWL_ZoW_5KPDHQpJT_xlVpbBx-mIX77XWX2omesthu26e4NrsLbpCkprBDZfmhZA6PFT2hrkrI5LHXllO2G_YmHbCyoZwRaWS8jpzykoIwuu8O74UOp-5WzHRpeILBrbqKL2Krdj9Z1Ee7vouU4tyuMXRr8_IGoaKaSFlqe_YZLgp0XUh8M9ib9ruInKdFPcjn0uk07ukZGpbnVBT8xm6bJ8Ci2bpwiNlxnmUNQrUnsKn0cWWUesyztU7k4dfj76neG4uLhzpnbHIt3TuSqCc4xVBHP8XBo6T0iVuMwvvdJtquHi_jQz43gJmNYoMj27VLdgnWAlQ';
+const ML_GROUP_LEADS_GLOBAL  = '182023504020899604';
+const ML_GROUP_OBJECTIF_GLOBAL = '182025250594096661';
+const NOTION_DB_LEADS_GLOBAL       = 'd3d17b01-f2c0-4548-917a-818926180265';
+const NOTION_DB_VERSEMENTS_GLOBAL  = '640ba0df-9bf0-42a6-969b-b34fa11bca49';
+
+async function notionProxy(action, payload) {
+  try {
+    const res = await fetch('/.netlify/functions/notion', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...payload })
+    });
+    if (!res.ok) { console.error('notionProxy error', res.status, await res.text()); return null; }
+    return await res.json();
+  } catch(e) { console.error('notionProxy', e); return null; }
+}
+
 // Debounce timer pour la sauvegarde automatique
 let _saveSimTimer = null;
 
@@ -751,7 +772,7 @@ function updateSimURL() {
             objectif: state.capital >= 5000 ? state.capital : 5000,
             sim_url:  simUrl
           },
-          groupId: state.capital >= 5000 ? '182059741376152834' : '182023504020899604'
+          groupId: state.capital >= 5000 ? '182059741376152834' : ML_GROUP_LEADS_GLOBAL
         })
       });
     } catch(e) {}
@@ -770,7 +791,7 @@ function updateSimURL() {
             cible:    state.capital >= 5000 ? state.capital : 5000,
             simUrl:   simUrl
           },
-          dbId: 'd3d17b01-f2c0-4548-917a-818926180265'
+          dbId: NOTION_DB_LEADS_GLOBAL
         })
       });
     } catch(e) {}
@@ -1994,32 +2015,17 @@ async function _saveSimLinkToNotion(simUrl) {
       const params = new URLSearchParams(window.location.search);
       const email = params.get('email');
       if (!email) return;
-      const searchRes = await notionCall('/databases/' + NOTION_DB_LEADS + '/query', 'POST', {
-        filter: { property: 'Email', email: { equals: email } }
+      await notionProxy('upsertLead', {
+        email,
+        fields: {
+          prenom:   state.prenom || 'Vous',
+          capital:  state.capital,
+          epargne:  state.epargne,
+          cible:    state.capital >= 5000 ? state.capital : 5000,
+          simUrl:   simUrl
+        },
+        dbId: NOTION_DB_LEADS_GLOBAL
       });
-      const lead = searchRes.results?.[0];
-      if (lead) {
-        await notionCall('/pages/' + lead.id, 'PATCH', {
-          properties: {
-            'Lien simulation': { url: simUrl },
-            'Capital départ':  { number: state.capital },
-            'Épargne / mois':  { number: state.epargne },
-          }
-        });
-      } else {
-        await notionCall('/pages', 'POST', {
-          parent: { database_id: NOTION_DB_LEADS },
-          properties: {
-            'Prénom':           { title: [{ text: { content: state.prenom || 'Vous' } }] },
-            'Email':            { email: email },
-            'Capital départ':   { number: state.capital },
-            'Épargne / mois':   { number: state.epargne },
-            'Lien simulation':  { url: simUrl },
-            'Statut':           { select: { name: '🔥 Lead chaud' } },
-            'Date inscription': { date: { start: new Date().toISOString().split('T')[0] } },
-          }
-        });
-      }
     } catch(e) { console.error('saveSimLink', e); }
   }, 2000);
 }
