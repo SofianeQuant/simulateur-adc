@@ -486,7 +486,7 @@ header {
 
     <div class="header-right">
       <div class="header-badge"><span class="dot"></span> Analyse en cours</div>
-      <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;">✏️ Modifier ma simulation</button>
+      <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;display:none;">✏️ Modifier ma simulation</button>
     </div>
   </header>
 
@@ -757,45 +757,26 @@ function updateSimURL() {
   clearTimeout(_saveSimTimer);
   _saveSimTimer = setTimeout(async () => {
     const simUrl = window.location.href;
-    // Mise à jour MailerLite
+    const groupId = state.capital >= 5000 ? '182059741376152834' : ML_GROUP_LEADS_GLOBAL;
+
+    // MailerLite — appel direct (pas via Netlify Function = 0 crédit consommé)
+    try {
+      const mlRes = await fetch('https://connect.mailerlite.com/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify({ email, fields: { prenom: state.prenom, capital: String(state.capital), epargne: String(state.epargne), objectif: String(state.capital >= 5000 ? state.capital : 5000), sim_url: simUrl }, groups: [groupId] })
+      });
+    } catch(e) {}
+
+    // Notion — 1 seul appel Function (obligatoire cause CORS Notion)
     try {
       await fetch('/.netlify/functions/notion', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mlUpsertSubscriber',
-          email,
-          fields: {
-            prenom:   state.prenom,
-            capital:  state.capital,
-            epargne:  state.epargne,
-            objectif: state.capital >= 5000 ? state.capital : 5000,
-            sim_url:  simUrl
-          },
-          groupId: state.capital >= 5000 ? '182059741376152834' : ML_GROUP_LEADS_GLOBAL
-        })
+        body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
       });
     } catch(e) {}
-    // Mise à jour Notion
-    try {
-      await fetch('/.netlify/functions/notion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'upsertLead',
-          email,
-          fields: {
-            prenom:   state.prenom,
-            capital:  state.capital,
-            epargne:  state.epargne,
-            cible:    state.capital >= 5000 ? state.capital : 5000,
-            simUrl:   simUrl
-          },
-          dbId: NOTION_DB_LEADS_GLOBAL
-        })
-      });
-    } catch(e) {}
-  }, 2000);
+  }, 30000); // debounce 30s — optimisation crédits Netlify
 }
 
 function copySimLink() {
@@ -856,15 +837,20 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
 
   document.getElementById('app').innerHTML = `
     <!-- CANDIDAT BANNER -->
-    <div class="candidat-banner">
-      <div class="candidat-info">
-        <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--gold-dark),var(--gold-light));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:#111;flex-shrink:0;">${prenom.charAt(0).toUpperCase()}</div>
-        <div>
-          <div class="candidat-name">${prenom}</div>
-          <div class="candidat-tag">Plan d'action épargne</div>
+    <div class="candidat-banner" style="padding-bottom:10px;">
+      <div class="banner-inner" style="align-items:flex-start;">
+        <div class="candidat-info" style="flex:1;">
+          <h2 style="margin-bottom:10px;">${(PROFILS[state.personnage] || PROFILS['cdi']).emoji} <span>${prenom}</span></h2>
+          <div class="candidat-tags" style="margin-bottom:4px;">
+            <span class="tag gold">${(PROFILS[state.personnage] || PROFILS['cdi']).label}</span>
+            <span class="tag green">${capital.toLocaleString('fr-FR')} €</span>
+            <span class="tag">${epargne.toLocaleString('fr-FR')} €/mois</span>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;padding-left:14px;">
+          <button onclick="toggleModifier()" style="background:none;border:1px solid rgba(255,255,255,0.08);font-size:11px;color:var(--text3);cursor:pointer;padding:6px 14px;border-radius:20px;white-space:nowrap;transition:all .2s;" onmouseover="this.style.borderColor='rgba(200,150,62,0.4)';this.style.color='var(--gold-light)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='var(--text3)'">✏️ Modifier</button>
         </div>
       </div>
-      <button class="print-btn" id="btn-modifier" onclick="toggleModifier()" style="background:rgba(74,143,232,0.12);border-color:rgba(74,143,232,0.3);color:#8bbef0;">✏️ Modifier ma simulation</button>
     </div>
 
     <div class="adjust-section" id="modifier-panel" style="display:none;">
@@ -899,18 +885,18 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     <!-- INTRO -->
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:22px 24px;margin-bottom:20px;">
       <div style="font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;">🌱 Ta situation actuelle</div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;">
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Capital actuel</div>
-          <div style="font-size:20px;font-weight:800;color:#fff;white-space:nowrap;">${fmt(capital)}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;">
+        <div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Capital</div>
+          <div style="font-size:18px;font-weight:800;color:#fff;white-space:nowrap;">${fmt(capital)}</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Épargne / mois</div>
-          <div style="font-size:20px;font-weight:800;color:var(--green-light);white-space:nowrap;">${fmt(epargne)}</div>
+        <div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Épargne/mois</div>
+          <div style="font-size:18px;font-weight:800;color:var(--green-light);white-space:nowrap;">${fmt(epargne)}</div>
         </div>
-        <div style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:12px 14px;">
-          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:6px;">Objectif cible</div>
-          <div style="font-size:20px;font-weight:800;color:var(--gold-light);white-space:nowrap;">${fmt(cible)}</div>
+        <div style="flex:1;min-width:90px;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px 12px;">
+          <div style="font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;">Objectif</div>
+          <div style="font-size:18px;font-weight:800;color:var(--gold-light);white-space:nowrap;">${fmt(cible)}</div>
         </div>
       </div>
       ${manque > 0 ? `<div style="font-size:13px;color:var(--text2);line-height:1.6;">Il te manque <strong style="color:#fff">${fmt(manque)}</strong> pour atteindre les <strong style="color:var(--gold-light)">${fmt(cible)}</strong> — le seuil à partir duquel les vraies stratégies d'investissement s'ouvrent. Voici ton plan.</div>` : `<div style="font-size:13px;color:var(--green-light);font-weight:700;">✅ Tu es déjà au seuil des ${fmt(cible)} — tu peux passer à l'étape supérieure.</div>`}
@@ -1021,6 +1007,7 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <input id="suivi-email" type="email" placeholder="ton@email.com" style="flex:1;min-width:200px;padding:10px 14px;border-radius:8px;border:1px solid rgba(74,143,232,0.4);background:var(--bg3);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;outline:none;" oninput="this.style.borderColor='rgba(74,143,232,0.6)'">
           <button onclick="activerSuivi()" style="padding:10px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#3a7bd5,#5a9bf5);color:#fff;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;">Activer le suivi →</button>
+        <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation et tes rappels mensuels par email</div>
         </div>
         <div id="suivi-error" style="font-size:11px;color:var(--red);margin-top:6px;display:none;">Merci d'entrer un email valide.</div>
       </div>
@@ -1294,34 +1281,36 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   // MAILERLITE — inscrire / mettre à jour un subscriber
   // ═══════════════════════════════════════════════════════════
   async function mlUpsertSubscriber(email, fields, groupId) {
-    const simUrl = window.location.href.split('?')[0]
+    // Appel direct MailerLite — 0 crédit Netlify consommé
+    const simUrl = fields.sim_url || (window.location.href.split('?')[0]
       + '?source=tally&email=' + encodeURIComponent(email)
       + '&prenom=' + encodeURIComponent(fields.prenom || 'Vous')
       + '&capital=' + (fields.capital || 0)
       + '&epargne=' + (fields.epargne || 0)
-      + '&objectif=' + (fields.objectif || 5000);
+      + '&objectif=' + (fields.objectif || 5000));
     try {
-      const res = await fetch('/.netlify/functions/notion', {
+      const res = await fetch('https://connect.mailerlite.com/api/subscribers', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'mlUpsertSubscriber',
-          email,
-          fields: { ...fields, sim_url: simUrl },
-          groupId
-        })
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify({ email, fields: { prenom: fields.prenom || '', capital: String(fields.capital || 0), epargne: String(fields.epargne || 0), objectif: String(fields.objectif || 5000), sim_url: simUrl }, groups: [groupId] })
       });
-      const data = await res.json();
-      return data?.id || null;
+      const sub = await res.json();
+      return sub?.data?.id || null;
     } catch(e) { console.error('mlUpsertSubscriber', e); return null; }
   }
 
   async function mlRemoveFromGroup(email, groupId) {
+    // Appel direct MailerLite — 0 crédit Netlify consommé
     try {
-      await fetch('/.netlify/functions/notion', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'mlRemoveFromGroup', email, groupId })
+      const r = await fetch('https://connect.mailerlite.com/api/subscribers/' + encodeURIComponent(email), {
+        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      });
+      const sub = await r.json();
+      const sid = sub?.data?.id;
+      if (!sid) return;
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
       });
     } catch(e) { console.error('mlRemoveFromGroup', e); }
   }
@@ -1584,11 +1573,11 @@ function render() {
   document.getElementById('app').innerHTML = `
 
     <!-- CANDIDAT BANNER -->
-    <div class="candidat-banner">
-      <div class="banner-inner">
-        <div class="candidat-info">
-          <h2>${profil.emoji} <span>${prenom}</span></h2>
-          <div class="candidat-tags">
+    <div class="candidat-banner" style="padding-bottom:10px;">
+      <div class="banner-inner" style="align-items:flex-start;">
+        <div class="candidat-info" style="flex:1;">
+          <h2 style="margin-bottom:10px;">${profil.emoji} <span>${prenom}</span></h2>
+          <div class="candidat-tags" style="margin-bottom:12px;">
             <span class="tag gold">${profil.label}</span>
             <span class="tag">${obj.label.replace('Performance long terme','Perf. long terme').replace('Stabilité et revenu','Stabilité revenu').replace('Sécurité du capital','Sécurité')}</span>
             <span class="tag">${risque === 'faible' ? 'Prudent' : risque === 'elevee' ? 'Dynamique' : 'Équilibré'}</span>
@@ -1602,12 +1591,17 @@ function render() {
               <div class="s-sub">${score >= 70 ? 'Optimisé' : score >= 40 ? 'À développer' : 'En construction'} <span style="color:var(--text3);font-weight:400;font-size:11px;">/ 100</span></div>
             </div>
           </div>
+
         </div>
         <!-- Score version desktop (vertical box) -->
-        <div class="score-box">
+        <div class="score-box" style="align-self:center;">
           <div class="score-val" style="color:${scoreColor}">${score}</div>
-          <div class="score-label">Score Patrimoine</div>
+          <div class="score-label" style="margin-top:4px;">Score Patrimoine</div>
           <div style="font-size:9px;color:var(--text3);margin-top:2px;">${score >= 70 ? 'Optimisé' : score >= 40 ? 'À développer' : 'En construction'}</div>
+        </div>
+        <!-- Bouton Modifier à côté du score -->
+        <div style="display:flex;align-items:center;padding-left:14px;">
+          <button onclick="toggleModifier()" style="background:none;border:1px solid rgba(255,255,255,0.08);font-size:11px;color:var(--text3);cursor:pointer;padding:6px 14px;border-radius:20px;white-space:nowrap;transition:all .2s;" onmouseover="this.style.borderColor='rgba(200,150,62,0.4)';this.style.color='var(--gold-light)'" onmouseout="this.style.borderColor='rgba(255,255,255,0.08)';this.style.color='var(--text3)'">✏️ Modifier</button>
         </div>
       </div>
     </div>
@@ -1629,6 +1623,9 @@ function render() {
       <a href="${CALENDLY_URL}" target="_blank" style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--gold-light);text-decoration:none;padding:8px 16px;border:1px solid rgba(200,150,62,0.3);border-radius:20px;background:rgba(200,150,62,0.07);transition:all .2s;" onmouseover="this.style.background='rgba(200,150,62,0.15)'" onmouseout="this.style.background='rgba(200,150,62,0.07)'">
         📅 Prendre RDV gratuitement →
       </a>
+    </div>
+    <div style="margin:8px 0 0;text-align:center;display:flex;align-items:center;justify-content:center;gap:6px;">
+      <span style="font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</span>
     </div>
 
     <!-- AJUSTEMENTS toujours visibles -->
@@ -1774,6 +1771,7 @@ function render() {
       <p style="font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;">💡 ${fmt(finalWithEpargne)} dans ${years} ans — on peut faire mieux ensemble</p>
       <p style="font-size:12px;color:var(--text2);margin-bottom:12px;">Avec ${fmt(capital)} investis et ${fmt(epargne)}/mois, Alexandre identifie les leviers fiscaux pour optimiser cette projection.</p>
       <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;">📅 Réserver mon Audit Gratuit →</a>
+      <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</div>
     </div>
 
     <!-- 3. INTÉRÊTS COMPOSÉS -->
@@ -1909,6 +1907,7 @@ function render() {
         <div style="font-size:12px;color:var(--text2);line-height:1.5;">Score ${score}/100 · En 30 min on transforme ton potentiel de <strong style="color:var(--gold-light);white-space:nowrap;">${fmt(finalWithEpargne)}</strong> en plan d'action concret.</div>
       </div>
       <a href="${CALENDLY_URL}" target="_blank" class="cta-btn" style="font-size:13px;padding:12px 20px;" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">📅 Réserver mon audit gratuit →</a>
+      <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</div>
     </div>
 
     <!-- CTA -->
@@ -1925,6 +1924,7 @@ function render() {
           <a href="${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).url}" class="cta-btn" target="_blank">
             ${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).btnLabel}
           </a>
+          <div style="margin:6px 0 0;text-align:center;font-size:11px;color:var(--text3);">↑ Reçois ta simulation par email en réservant ton audit</div>
           <div class="cta-urgence" style="display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;">
             ${ctaConfig(capital, finalWithEpargne, epargne, years, score, prenom).badges}
           </div>
@@ -2804,7 +2804,10 @@ function _showModifierPanel() {
   const { prenom, capital, risque, objectif, personnage } = state;
   document.getElementById('btn-modifier').textContent = '✕ Fermer';
   const panelHtml = `<div id="modifier-panel" style="background:var(--bg2);border:1px solid rgba(200,150,62,0.35);border-radius:14px;padding:16px;margin:16px 0 0;position:relative;z-index:10;">
-    <h4 style="font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;margin-bottom:20px;display:flex;align-items:center;gap:8px;">✏️ Modifier la simulation <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">Les modifications sont appliquées en temps réel</span></h4>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <h4 style="font-size:13px;font-weight:700;letter-spacing:.08em;color:var(--gold);text-transform:uppercase;display:flex;align-items:center;gap:8px;margin:0;">✏️ Modifier la simulation <span style="font-size:10px;font-weight:500;color:var(--text3);text-transform:none;letter-spacing:0">Les modifications sont appliquées en temps réel</span></h4>
+      <button onclick="toggleModifier()" style="background:none;border:none;font-size:18px;color:var(--text3);cursor:pointer;padding:0 4px;line-height:1;transition:color .2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--text3)'">✕</button>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;">
       <div>
         <label style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;display:block;margin-bottom:6px;">Prénom</label>
@@ -2911,6 +2914,13 @@ window.addEventListener('DOMContentLoaded', () => {
   state = { ...parsed, revenu: profil.revenu, epargne: profil.epargne, creditEnCours: 0, revenuLocatif: 0 };
   render();
 
+  // Afficher "Modifier ma simulation" uniquement si email dans l'URL
+  const _urlP = new URLSearchParams(window.location.search);
+  if (_urlP.get('email')) {
+    const btnMod = document.getElementById('btn-modifier');
+    if (btnMod) btnMod.style.display = '';
+  }
+
   // ─── MAILERLITE AUTO-INSCRIPTION ─────────────────────────────────────────
   // Déclenché uniquement si le lead arrive depuis Tally (source=tally dans l'URL)
   // ou si email est passé en paramètre URL
@@ -2971,25 +2981,37 @@ async function registerToMailerLite(email, data) {
   else if (horizon <= 12) groupId = GROUPS.moyen;
   else                    groupId = GROUPS.long;
 
+  // Appel direct MailerLite — 0 crédit Netlify consommé
   try {
-    await fetch('/.netlify/functions/notion', {
+    const mlBody = { email, fields: { prenom: data.prenom || '', capital: String(capital), epargne: String(epargne), objectif: String(objectif), sim_url: simUrl } };
+    const mlRes = await fetch('https://connect.mailerlite.com/api/subscribers', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'mlUpsertSubscriber',
-        email,
-        fields: {
-          prenom:   data.prenom || '',
-          capital:  capital,
-          epargne:  epargne,
-          objectif: objectif,
-          sim_url:  simUrl
-        },
-        groupId
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+      body: JSON.stringify(mlBody)
     });
-  } catch(e) {
-    // Silencieux — ne pas bloquer l'expérience utilisateur
+    const mlData = await mlRes.json();
+    const sid = mlData?.data?.id;
+    if (sid) {
+      // Retirer puis réajouter pour déclencher l'automation même si déjà subscriber
+      if (capital >= 5000) {
+        try { await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, { method: 'DELETE', headers: { 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' } }); } catch(e) {}
+      }
+      await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + groupId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' }
+      });
+    }
+  } catch(e) {}
+
+  // Notion — 1 seul appel Function uniquement si capital >= 5k (lead chaud)
+  if (capital >= 5000) {
+    try {
+      await fetch('/.netlify/functions/notion', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: data.prenom || 'Vous', capital, epargne, cible: objectif, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
+      });
+    } catch(e) {}
   }
 }
 </script>
