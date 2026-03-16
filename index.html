@@ -2877,21 +2877,35 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (email && (source === 'tally' || urlParams.get('tally') === '1')) {
     registerToMailerLite(email, parsed);
+    // Sauvegarder aussi dans Notion pour les ≥5k
+    if ((parseInt(parsed.capital) || 0) >= 5000) {
+      const simUrl = window.location.href;
+      notionProxy('upsertLead', {
+        email,
+        fields: {
+          prenom: parsed.prenom || 'Vous',
+          capital: parseInt(parsed.capital) || 0,
+          epargne: parseInt(parsed.epargne) || 0,
+          cible: parseInt(parsed.objectif) || 5000,
+          simUrl
+        },
+        dbId: NOTION_DB_LEADS
+      });
+    }
   }
 });
 
 // ─── INSCRIPTION MAILERLITE DEPUIS LE SIMULATEUR ─────────────────────────────
 async function registerToMailerLite(email, data) {
-  // Clé API MailerLite — à remplacer par ta vraie clé depuis
-  // dashboard.mailerlite.com/integrations/api → Generate new token
-  const MAILERLITE_API_KEY = 'INSERE_TA_CLE_API_ICI';
+  const MAILERLITE_API_KEY = ML_API_KEY;
 
   // IDs des groupes MailerLite
   const GROUPS = {
-    court:   '182024263602013505', // 1-6 mois
-    moyen:   '182024267133618164', // 7-12 mois
-    long:    '182024270374766345', // 13-24 mois
-    objectif:'182025250594096661', // objectif atteint
+    court:    '182024263602013505', // 1-6 mois
+    moyen:    '182024267133618164', // 7-12 mois
+    long:     '182024270374766345', // 13-24 mois
+    objectif: '182025250594096661', // objectif atteint
+    analyse:  '182059741376152834', // leads ≥ 5k analyse patrimoniale
   };
 
   // Calcul de l'horizon
@@ -2901,15 +2915,18 @@ async function registerToMailerLite(email, data) {
   const manque   = Math.max(0, objectif - capital);
   const horizon  = manque <= 0 ? 0 : Math.ceil(manque / epargne);
 
-  // Choix du groupe selon horizon
+  // URL de simulation personnalisée
+  const simUrl = getSimUrl();
+
+  // Leads ≥ 5k → groupe analyse patrimoniale + email simulation
+  // Leads < 5k → groupe selon horizon épargne
   let groupId;
-  if (horizon <= 0)       groupId = GROUPS.objectif;
+  if (capital >= 5000) {
+    groupId = GROUPS.analyse;
+  } else if (horizon <= 0)       groupId = GROUPS.objectif;
   else if (horizon <= 6)  groupId = GROUPS.court;
   else if (horizon <= 12) groupId = GROUPS.moyen;
   else                    groupId = GROUPS.long;
-
-  // URL de simulation personnalisée
-  const simUrl = getSimUrl();
 
   try {
     await fetch('https://connect.mailerlite.com/api/subscribers', {
