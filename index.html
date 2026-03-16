@@ -1362,10 +1362,36 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
   let _suiviEmail = null;
 
   function getSuiviData(email) {
+    // 1. Lire depuis localStorage
+    let data = { email, versements: {}, cible, capital };
     try {
       const raw = localStorage.getItem(STORAGE_KEY_PREFIX + email);
-      return raw ? JSON.parse(raw) : { email, versements: {}, cible, capital };
-    } catch(e) { return { email, versements: {}, cible, capital }; }
+      if (raw) data = JSON.parse(raw);
+    } catch(e) {}
+
+    // 2. Fusionner avec les versements encodés dans l'URL (cross-device)
+    try {
+      const vParam = getURLParams().get('versements');
+      if (vParam) {
+        const versementsURL = {};
+        vParam.split(',').forEach(entry => {
+          const idx = entry.indexOf('=');
+          if (idx > 0) {
+            const k = entry.slice(0, idx);
+            const v = parseFloat(entry.slice(idx + 1));
+            if (k && !isNaN(v)) versementsURL[k] = v;
+          }
+        });
+        // URL prioritaire sur localStorage si localStorage vide
+        if (Object.keys(data.versements).length === 0 && Object.keys(versementsURL).length > 0) {
+          data.versements = versementsURL;
+          // Sauvegarder dans localStorage pour la prochaine fois
+          try { localStorage.setItem(STORAGE_KEY_PREFIX + email, JSON.stringify(data)); } catch(e) {}
+        }
+      }
+    } catch(e) {}
+
+    return data;
   }
 
   function saveSuiviData(data) {
@@ -1379,8 +1405,9 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     const params = getURLParams();
     if (!params.get('email')) return;
     // Encoder versements : "2026-03:340,2026-04:200"
+    // Format: "2026-03=340,2026-04=200" (= pour séparer clé/valeur, - dans la clé)
     const vStr = Object.entries(data.versements || {})
-      .map(([k, v]) => k + ':' + v).join(',');
+      .map(([k, v]) => k + '=' + v).join(',');
     if (vStr) params.set('versements', vStr);
     else params.delete('versements');
     params.set('capital', data.capital || 0);
@@ -1737,8 +1764,12 @@ function renderEpargnePlan(prenom, capital, revenu, epargne) {
     const versementsURL = {};
     if (vParam) {
       vParam.split(',').forEach(entry => {
-        const [k, v] = entry.split(':');
-        if (k && v) versementsURL[k] = parseFloat(v);
+        const idx = entry.indexOf('=');
+        if (idx > 0) {
+          const k = entry.slice(0, idx);
+          const v = parseFloat(entry.slice(idx + 1));
+          if (k && !isNaN(v)) versementsURL[k] = v;
+        }
       });
     }
     // Fusionner URL + localStorage + Notion (Notion prioritaire)
