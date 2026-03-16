@@ -3222,6 +3222,31 @@ window.addEventListener('DOMContentLoaded', () => {
   };
   render();
 
+  // ── Sauvegarder immédiatement sim_url complet dans MailerLite si email présent ──
+  // Corrige les URLs incomplètes (sans revenu/personnage/risque) venant de Tally
+  setTimeout(() => {
+    const _emailInit = getURLParams().get('email');
+    if (_emailInit) {
+      const _simUrlFull = buildFullSimUrl();
+      fetch('https://connect.mailerlite.com/api/subscribers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY, 'Accept': 'application/json' },
+        body: JSON.stringify({
+          email: _emailInit,
+          fields: {
+            prenom:     state.prenom || 'Vous',
+            capital:    String(state.capital || 0),
+            epargne:    String(state.epargne || 0),
+            revenu:     state.revenu || 0,
+            risque:     state.risque || 'moderee',
+            personnage: state.personnage || 'cdi',
+            sim_url:    _simUrlFull
+          }
+        })
+      }).catch(() => {});
+    }
+  }, 1000);
+
   // Initialiser l'onglet immo depuis l'URL si immo=locatif
   const _immoParam = getURLParams().get('immo');
   if (_immoParam === 'locatif') {
