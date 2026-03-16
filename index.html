@@ -915,7 +915,19 @@ function updateSimURL() {
       await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital >= 5000 ? state.capital : 5000, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
+        body: JSON.stringify({
+          action: 'upsertLead',
+          email,
+          fields: {
+            prenom: state.prenom,
+            capital: state.capital,
+            epargne: state.epargne,
+            cible: state.capital >= 5000 ? state.capital : 5000,
+            simUrl,
+            simulationAJour: simUrl
+          },
+          dbId: NOTION_DB_LEADS_GLOBAL
+        })
       });
     } catch(e) {}
   }, 3000); // debounce 3s après modification
@@ -1001,12 +1013,31 @@ async function onCalendlyClick() {
       await fetch('https://connect.mailerlite.com/api/subscribers/' + sid + '/groups/' + GROUP_5K, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + ML_API_KEY } });
     }
   } catch(e) {}
-  // Notion via Netlify Function
+  // Notion via proxy — avec Lien Calendly + Simulation à jour
   try {
+    const _calendlyUrl = CALENDLY_URL
+      + '?utm_source=simulateur'
+      + '&utm_medium=' + encodeURIComponent(state.prenom || 'prospect')
+      + '&name=' + encodeURIComponent(state.prenom || '')
+      + '&email=' + encodeURIComponent(email)
+      + '&a2=' + encodeURIComponent(simUrl);
     await fetch('https://adc-proxy.sofiane-didi.workers.dev', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'upsertLead', email, fields: { prenom: state.prenom, capital: state.capital, epargne: state.epargne, cible: state.capital, simUrl }, dbId: NOTION_DB_LEADS_GLOBAL })
+      body: JSON.stringify({
+        action: 'upsertLead',
+        email,
+        fields: {
+          prenom: state.prenom,
+          capital: state.capital,
+          epargne: state.epargne,
+          cible: state.capital,
+          simUrl,
+          calendlyUrl: _calendlyUrl,
+          simulationAJour: simUrl
+        },
+        dbId: NOTION_DB_LEADS_GLOBAL
+      })
     });
   } catch(e) {}
 }
