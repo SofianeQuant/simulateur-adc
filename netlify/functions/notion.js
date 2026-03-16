@@ -65,6 +65,10 @@ exports.handler = async (event) => {
 
     if (action === 'mlUpsertSubscriber') {
       const { email, fields, groupId } = payload;
+      const capital = parseFloat(fields.capital) || 0;
+      const GROUP_5K = '182059741376152834';
+
+      // 1. Mettre à jour les champs du subscriber
       const body = {
         email,
         fields: {
@@ -73,11 +77,23 @@ exports.handler = async (event) => {
           epargne:  String(fields.epargne  || 0),
           objectif: String(fields.objectif || 5000),
           sim_url:  fields.sim_url  || ''
-        },
-        groups: [groupId]
+        }
       };
       const res = await mlRequest('POST', '/api/subscribers', body);
-      return { statusCode: 200, headers, body: JSON.stringify({ id: res.data?.data?.id || null }) };
+      const sid = res.data?.data?.id;
+      if (!sid) return { statusCode: 200, headers, body: JSON.stringify({ id: null }) };
+
+      // 2. Toujours ajouter au groupe principal (sans retirer)
+      await mlRequest('POST', '/api/subscribers/' + sid + '/groups/' + groupId, null);
+
+      // 3. Si capital >= 5k → retirer puis réajouter au groupe ≥5k
+      //    pour forcer le déclenchement de l'automation, tout en gardant les autres groupes
+      if (capital >= 5000) {
+        try { await mlRequest('DELETE', '/api/subscribers/' + sid + '/groups/' + GROUP_5K, null); } catch(e) {}
+        await mlRequest('POST', '/api/subscribers/' + sid + '/groups/' + GROUP_5K, null);
+      }
+
+      return { statusCode: 200, headers, body: JSON.stringify({ id: sid }) };
     }
 
     if (action === 'mlRemoveFromGroup') {
