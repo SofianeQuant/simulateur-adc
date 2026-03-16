@@ -2066,6 +2066,9 @@ function updateCalendlyLinks() {
       u.searchParams.set('utm_medium', state.prenom || 'prospect');
       u.searchParams.set('utm_content', simUrl);
       u.searchParams.set('name', state.prenom || '');
+      // Pré-remplir email Calendly depuis l'URL
+      const _emailParam = new URLSearchParams(window.location.search).get('email');
+      if (_emailParam) u.searchParams.set('email', _emailParam);
       u.searchParams.set('a2', simUrl);
       a.href = u.toString();
     } catch(e) {}
