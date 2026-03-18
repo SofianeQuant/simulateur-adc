@@ -3385,17 +3385,22 @@ window.addEventListener('DOMContentLoaded', () => {
     // Sauvegarder aussi dans Notion pour les ≥5k
     if ((parseInt(parsed.capital) || 0) >= 5000) {
       const simUrl = window.location.href;
-      notionProxy('upsertLead', {
-        email,
-        fields: {
-          prenom: parsed.prenom || 'Vous',
-          capital: parseInt(parsed.capital) || 0,
-          epargne: parseInt(parsed.epargne) || 0,
-          cible: parseInt(parsed.objectif) || 5000,
-          simUrl
-        },
-        dbId: NOTION_DB_LEADS
-      });
+      fetch('https://adc-proxy.sofiane-didi.workers.dev', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'upsertLead',
+          email,
+          fields: {
+            prenom: parsed.prenom || 'Vous',
+            capital: parseInt(parsed.capital) || 0,
+            epargne: parseInt(parsed.epargne) || 0,
+            cible: Math.max(parseInt(parsed.capital) || 0, 5000),
+            simUrl
+          },
+          dbId: 'd3d17b01-f2c0-4548-917a-818926180265'
+        })
+      }).catch(() => {});
     }
   }
 });
