@@ -3382,8 +3382,8 @@ window.addEventListener('DOMContentLoaded', () => {
 
   if (email && (source === 'tally' || urlParams.get('tally') === '1')) {
     registerToMailerLite(email, parsed);
-    // Sauvegarder aussi dans Notion pour les ≥5k
-    if ((parseInt(parsed.capital) || 0) >= 5000) {
+    // Sauvegarder dans Notion pour les ≥5k — utiliser state.capital (déjà parsé correctement)
+    if (state.capital >= 5000) {
       const simUrl = window.location.href;
       fetch('https://adc-proxy.sofiane-didi.workers.dev', {
         method: 'POST',
@@ -3392,10 +3392,10 @@ window.addEventListener('DOMContentLoaded', () => {
           action: 'upsertLead',
           email,
           fields: {
-            prenom: parsed.prenom || 'Vous',
-            capital: parseInt(parsed.capital) || 0,
-            epargne: parseInt(parsed.epargne) || 0,
-            cible: Math.max(parseInt(parsed.capital) || 0, 5000),
+            prenom: state.prenom || 'Vous',
+            capital: state.capital,
+            epargne: state.epargne || 0,
+            cible: Math.max(state.capital, 5000),
             simUrl
           },
           dbId: 'd3d17b01-f2c0-4548-917a-818926180265'
